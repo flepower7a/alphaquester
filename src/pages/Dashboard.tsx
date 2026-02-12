@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   Key, Search, Swords, Play, Square, RefreshCw, Pause,
-  CheckCircle, XCircle, Clock, Sparkles, Shield, RotateCcw,
+  CheckCircle, XCircle, Clock, Shield, RotateCcw,
   Plus, Trash2, Zap, Trophy, Activity, TrendingUp, User, ArrowRight
 } from "lucide-react";
 import {
@@ -471,7 +471,14 @@ export default function Dashboard() {
                   const alreadyCompleted = quest.completed || isQuestCompleted(quest.id);
                   return (
                     <motion.div key={quest.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}
-                      onClick={() => !isActive && setSelectedQuest(quest)}
+                      onClick={() => {
+                        if (isActive) return;
+                        setSelectedQuest(quest);
+                        setLogs([]);
+                        setSessionStatus("idle");
+                        setSessionId(null);
+                        setLiveProgress(null);
+                      }}
                       className={`rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 border border-border/30 ${
                         selectedQuest?.id === quest.id ? "ring-1 ring-foreground/30 glow-white" : "bg-secondary/10 hover:bg-secondary/20"
                       } ${alreadyCompleted ? "opacity-60" : ""}`}>
@@ -495,7 +502,7 @@ export default function Dashboard() {
                           {alreadyCompleted ? (
                             <CheckCircle className="w-5 h-5 text-success shrink-0" />
                           ) : quest.supported ? (
-                            <Sparkles className="w-5 h-5 text-foreground/50 shrink-0" />
+                            <img src="/emojis/quest.png" alt="" className="w-5 h-5 shrink-0 opacity-60" />
                           ) : (
                             <XCircle className="w-5 h-5 text-muted-foreground shrink-0" />
                           )}
