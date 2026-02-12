@@ -64,6 +64,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_type: string
           avatar_url: string | null
           created_at: string
           id: string
@@ -74,6 +75,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          account_type?: string
           avatar_url?: string | null
           created_at?: string
           id?: string
@@ -84,6 +86,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          account_type?: string
           avatar_url?: string | null
           created_at?: string
           id?: string
@@ -189,6 +192,44 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "discord_tokens"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_codes: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_used: boolean
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_codes_used_by_fkey"
+            columns: ["used_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }

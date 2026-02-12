@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
+import Verification from "./pages/Verification";
 import Dashboard from "./pages/Dashboard";
 import QuestSolver from "./pages/QuestSolver";
 import QuestHistory from "./pages/QuestHistory";
@@ -13,8 +14,38 @@ import StatsPage from "./pages/StatsPage";
 import SettingsPage from "./pages/SettingsPage";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import NotFound from "./pages/NotFound";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient();
+
+function PremiumRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const [isPremium, setIsPremium] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("account_type")
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data }) => {
+        setIsPremium(data?.account_type === "premium");
+      });
+  }, [user]);
+
+  if (loading || (user && isPremium === null)) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-foreground/20 border-t-foreground rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (!user) return <Navigate to="/auth" replace />;
+  if (!isPremium) return <Navigate to="/verification" replace />;
+  return <>{children}</>;
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -38,7 +69,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (user) return <Navigate to="/verification" replace />;
   return <>{children}</>;
 }
 
@@ -52,11 +83,12 @@ const App = () => (
           <Routes>
             <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
             <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout><Dashboard /></DashboardLayout></ProtectedRoute>} />
-            <Route path="/dashboard/solver" element={<ProtectedRoute><DashboardLayout><QuestSolver /></DashboardLayout></ProtectedRoute>} />
-            <Route path="/dashboard/history" element={<ProtectedRoute><DashboardLayout><QuestHistory /></DashboardLayout></ProtectedRoute>} />
-            <Route path="/dashboard/stats" element={<ProtectedRoute><DashboardLayout><StatsPage /></DashboardLayout></ProtectedRoute>} />
-            <Route path="/dashboard/settings" element={<ProtectedRoute><DashboardLayout><SettingsPage /></DashboardLayout></ProtectedRoute>} />
+            <Route path="/verification" element={<ProtectedRoute><Verification /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<PremiumRoute><DashboardLayout><Dashboard /></DashboardLayout></PremiumRoute>} />
+            <Route path="/dashboard/solver" element={<PremiumRoute><DashboardLayout><QuestSolver /></DashboardLayout></PremiumRoute>} />
+            <Route path="/dashboard/history" element={<PremiumRoute><DashboardLayout><QuestHistory /></DashboardLayout></PremiumRoute>} />
+            <Route path="/dashboard/stats" element={<PremiumRoute><DashboardLayout><StatsPage /></DashboardLayout></PremiumRoute>} />
+            <Route path="/dashboard/settings" element={<PremiumRoute><DashboardLayout><SettingsPage /></DashboardLayout></PremiumRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

@@ -24,7 +24,7 @@ export default function Auth() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("تم تسجيل الدخول بنجاح!");
-        navigate("/dashboard");
+        navigate("/verification");
       } else {
         const { error } = await supabase.auth.signUp({
           email, password,
@@ -32,7 +32,7 @@ export default function Auth() {
         });
         if (error) throw error;
         toast.success("تم إنشاء الحساب بنجاح!");
-        navigate("/dashboard");
+        navigate("/verification");
       }
     } catch (error: any) {
       toast.error(error.message);
