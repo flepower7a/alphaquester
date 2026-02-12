@@ -16,32 +16,44 @@ export type Database = {
     Tables: {
       discord_tokens: {
         Row: {
+          avatar_url: string | null
+          boost_months: number | null
           created_at: string
           discord_user_id: string | null
           discord_username: string | null
+          display_name: string | null
           id: string
           is_active: boolean | null
           last_used_at: string | null
+          nitro_type: string | null
           token_hash: string
           user_id: string
         }
         Insert: {
+          avatar_url?: string | null
+          boost_months?: number | null
           created_at?: string
           discord_user_id?: string | null
           discord_username?: string | null
+          display_name?: string | null
           id?: string
           is_active?: boolean | null
           last_used_at?: string | null
+          nitro_type?: string | null
           token_hash: string
           user_id: string
         }
         Update: {
+          avatar_url?: string | null
+          boost_months?: number | null
           created_at?: string
           discord_user_id?: string | null
           discord_username?: string | null
+          display_name?: string | null
           id?: string
           is_active?: boolean | null
           last_used_at?: string | null
+          nitro_type?: string | null
           token_hash?: string
           user_id?: string
         }
