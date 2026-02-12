@@ -1,7 +1,7 @@
 // Emoji/icon mapping for quest types and UI elements
 // All paths reference the discord-quests-bot emojis folder
 
-const EMOJI_BASE = "/discord-quests-bot-0.6/emojis";
+const EMOJI_BASE = "/emojis";
 
 export const questTypeIcons: Record<string, string> = {
   PLAY_ON_DESKTOP: `${EMOJI_BASE}/PLAY_ON_DESKTOP.png`,
