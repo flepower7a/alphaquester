@@ -388,12 +388,15 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-      {/* Main Grid: Tokens + Quest Solver side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Main Layout: Two columns */}
+      <div className="flex flex-col lg:flex-row gap-4">
+      
+      {/* Left Column: Tokens + Recent Sessions */}
+      <div className="flex flex-col gap-4 lg:w-1/2 lg:min-w-0">
 
       {/* Token Management */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-        className={cardClass + " p-5 self-start"}>
+        className={cardClass + " p-5"}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <img src={statusIcons.discord} alt="" className="w-5 h-5" />
@@ -452,7 +455,7 @@ export default function Dashboard() {
 
       {/* Recent Sessions - same column as tokens */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-        className={cardClass + " p-5 self-start lg:col-start-1 lg:row-start-2"}>
+        className={cardClass + " p-5"}>
         <h2 className="text-base font-semibold mb-3 flex items-center gap-2">
           <img src={statusIcons.log} alt="" className="w-5 h-5" />
           آخر الجلسات
@@ -491,10 +494,13 @@ export default function Dashboard() {
         )}
       </motion.div>
 
-      {/* Quest Solver Section */}
+      </div>{/* End Left Column */}
+
+      {/* Right Column: Quest Solver */}
       {selectedToken && (
+        <div className="lg:w-1/2 lg:min-w-0">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-          className={cardClass + " p-5 self-start lg:col-start-2 lg:row-start-1 lg:row-span-2"}>
+          className={cardClass + " p-5"}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <img src={statusIcons.quest} alt="" className="w-5 h-5" />
@@ -669,9 +675,10 @@ export default function Dashboard() {
             </motion.div>
           )}
         </motion.div>
+        </div>
       )}
 
-      </div>{/* End Main Grid */}
+      </div>{/* End Main Layout */}
     </div>
   );
 }
