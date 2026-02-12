@@ -120,14 +120,27 @@ serve(async (req) => {
         const reward = rewards[0];
         const completed = !!q.user_status?.completed_at;
 
+        // Build correct hero image URL
+        let heroImage: string | null = null;
+        if (config?.assets?.hero) {
+          const hero = config.assets.hero;
+          // If hero is already a full URL, use it
+          if (hero.startsWith("http")) {
+            heroImage = hero;
+          } else {
+            // Try quest-assets path with config ID
+            const configId = config?.id || q.id;
+            heroImage = `https://cdn.discordapp.com/quest-assets/${configId}/${hero}`;
+          }
+        }
+
         return {
           id: q.id,
+          config_id: config?.id,
           name: config?.messages?.quest_name || "Unknown Quest",
           game_title: config?.messages?.game_title || "",
           publisher: config?.messages?.game_publisher || "",
-          hero_image: config?.assets?.hero
-            ? `https://cdn.discordapp.com/quests/${q.id}/${config.assets.hero}`
-            : null,
+          hero_image: heroImage,
           reward_name: reward?.messages?.name || "No Reward",
           method: solveMethod?.id || null,
           tasks: taskList,
