@@ -315,32 +315,31 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4">
-        <motion.div 
-          className="p-3 rounded-2xl bg-foreground/5 border border-border/40 glow-white-sm"
-          whileHover={{ scale: 1.05 }}
-        >
-          <Zap className="w-7 h-7 text-foreground" />
+    <div className="space-y-5">
+      {/* Header + Stats Row */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
+          <motion.div className="p-2.5 rounded-2xl bg-foreground/5 border border-border/40 glow-white-sm" whileHover={{ scale: 1.05 }}>
+            <Zap className="w-6 h-6 text-foreground" />
+          </motion.div>
+          <div>
+            <h1 className="text-xl font-bold text-foreground">مرحباً، {user?.email?.split("@")[0]} 👋</h1>
+            <p className="text-muted-foreground text-xs">إليك ملخص نشاطك ولوحة التحكم</p>
+          </div>
         </motion.div>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">مرحباً، {user?.email?.split("@")[0]} 👋</h1>
-          <p className="text-muted-foreground text-sm">إليك ملخص نشاطك ولوحة التحكم</p>
-        </div>
-      </motion.div>
+      </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
         {statItems.map((s, i) => (
-          <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-            className={cardClass + " p-5 group"}>
-            <div className="flex items-start justify-between">
+          <motion.div key={s.label} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+            className={cardClass + " p-4 group"}>
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
-                <p className="text-3xl font-bold text-foreground">{s.value}</p>
+                <p className="text-[11px] text-muted-foreground mb-0.5">{s.label}</p>
+                <p className="text-2xl font-bold text-foreground">{s.value}</p>
               </div>
-              <img src={s.emoji} alt="" className="w-8 h-8 opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
+              <img src={s.emoji} alt="" className="w-7 h-7 opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
             </div>
           </motion.div>
         ))}
@@ -389,9 +388,12 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
+      {/* Main Grid: Tokens + Quest Solver side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
       {/* Token Management */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-        className={cardClass + " p-6"}>
+        className={cardClass + " p-5 self-start"}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <img src={statusIcons.discord} alt="" className="w-5 h-5" />
@@ -451,7 +453,7 @@ export default function Dashboard() {
       {/* Quest Solver Section */}
       {selectedToken && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-          className={cardClass + " p-6"}>
+          className={cardClass + " p-5 self-start lg:col-span-1"}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <img src={statusIcons.quest} alt="" className="w-5 h-5" />
@@ -628,10 +630,12 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      {/* Recent Sessions */}
+      </div>{/* End Main Grid */}
+
+      {/* Recent Sessions - Full Width */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-        className={cardClass + " p-6"}>
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+        className={cardClass + " p-5"}>
+        <h2 className="text-base font-semibold mb-3 flex items-center gap-2">
           <img src={statusIcons.log} alt="" className="w-5 h-5" />
           آخر الجلسات
         </h2>
