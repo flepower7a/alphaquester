@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import QuestSolver from "./pages/QuestSolver";
 import QuestHistory from "./pages/QuestHistory";
+import StatsPage from "./pages/StatsPage";
 import SettingsPage from "./pages/SettingsPage";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import NotFound from "./pages/NotFound";
@@ -20,7 +21,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-foreground/20 border-t-foreground rounded-full animate-spin" />
       </div>
     );
   }
@@ -33,7 +34,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-foreground/20 border-t-foreground rounded-full animate-spin" />
       </div>
     );
   }
@@ -51,38 +52,11 @@ const App = () => (
           <Routes>
             <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
             <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout><Dashboard /></DashboardLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/solver"
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout><QuestSolver /></DashboardLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/history"
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout><QuestHistory /></DashboardLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/settings"
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout><SettingsPage /></DashboardLayout>
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout><Dashboard /></DashboardLayout></ProtectedRoute>} />
+            <Route path="/dashboard/solver" element={<ProtectedRoute><DashboardLayout><QuestSolver /></DashboardLayout></ProtectedRoute>} />
+            <Route path="/dashboard/history" element={<ProtectedRoute><DashboardLayout><QuestHistory /></DashboardLayout></ProtectedRoute>} />
+            <Route path="/dashboard/stats" element={<ProtectedRoute><DashboardLayout><StatsPage /></DashboardLayout></ProtectedRoute>} />
+            <Route path="/dashboard/settings" element={<ProtectedRoute><DashboardLayout><SettingsPage /></DashboardLayout></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

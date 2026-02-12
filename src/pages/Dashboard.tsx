@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import {
   Key, Search, Swords, Play, Square, RefreshCw, Pause,
   CheckCircle, XCircle, Clock, Sparkles, Shield, RotateCcw,
-  Plus, Trash2, Zap, Trophy, Activity, TrendingUp, User
+  Plus, Trash2, Zap, Trophy, Activity, TrendingUp, User, ArrowRight
 } from "lucide-react";
 import {
   questTypeIcons, statusIcons, getBoostImage, getBoostLevel,
@@ -49,6 +49,8 @@ interface SessionStats {
   totalSolved: number;
 }
 
+const cardClass = "rounded-3xl bg-card/80 border border-border/30 backdrop-blur-xl glow-white-sm card-hover";
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [tokens, setTokens] = useState<TokenRecord[]>([]);
@@ -57,52 +59,36 @@ export default function Dashboard() {
   const [addingToken, setAddingToken] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // Quest solving state
   const [quests, setQuests] = useState<QuestData[]>([]);
   const [loadingQuests, setLoadingQuests] = useState(false);
   const [selectedQuest, setSelectedQuest] = useState<QuestData | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionStatus, setSessionStatus] = useState<string>("idle");
   const [logs, setLogs] = useState<string[]>([]);
+  const [completedQuestIds, setCompletedQuestIds] = useState<Set<string>>(new Set());
 
-  // Stats
   const [stats, setStats] = useState<SessionStats>({ totalSessions: 0, completedSessions: 0, runningSessions: 0, totalSolved: 0 });
-
-  // Recent sessions
   const [recentSessions, setRecentSessions] = useState<any[]>([]);
 
-  // Load tokens
   useEffect(() => {
     if (!user) return;
     loadTokens();
     loadStats();
     loadRecentSessions();
+    loadCompletedQuests();
   }, [user]);
 
   const loadTokens = async () => {
-    const { data } = await supabase
-      .from("discord_tokens")
-      .select("*")
-      .eq("user_id", user!.id)
-      .eq("is_active", true);
+    const { data } = await supabase.from("discord_tokens").select("*").eq("user_id", user!.id).eq("is_active", true);
     if (data) {
       setTokens(data as TokenRecord[]);
-      if (data.length > 0 && !selectedToken) {
-        setSelectedToken(data[0] as TokenRecord);
-      }
+      if (data.length > 0 && !selectedToken) setSelectedToken(data[0] as TokenRecord);
     }
   };
 
   const loadStats = async () => {
-    const { data: sessions } = await supabase
-      .from("quest_sessions")
-      .select("status")
-      .eq("user_id", user!.id);
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("total_solved_quests")
-      .eq("user_id", user!.id)
-      .maybeSingle();
+    const { data: sessions } = await supabase.from("quest_sessions").select("status").eq("user_id", user!.id);
+    const { data: profile } = await supabase.from("profiles").select("total_solved_quests").eq("user_id", user!.id).maybeSingle();
     if (sessions) {
       setStats({
         totalSessions: sessions.length,
@@ -114,22 +100,20 @@ export default function Dashboard() {
   };
 
   const loadRecentSessions = async () => {
-    const { data } = await supabase
-      .from("quest_sessions")
-      .select("*")
-      .eq("user_id", user!.id)
-      .order("created_at", { ascending: false })
-      .limit(5);
+    const { data } = await supabase.from("quest_sessions").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(5);
     if (data) setRecentSessions(data);
+  };
+
+  const loadCompletedQuests = async () => {
+    const { data } = await supabase.from("quest_sessions").select("quest_id").eq("user_id", user!.id).eq("status", "completed");
+    if (data) setCompletedQuestIds(new Set(data.map(s => s.quest_id)));
   };
 
   const addToken = async () => {
     if (!newToken.trim()) return toast.error("أدخل التوكن");
     setAddingToken(true);
     try {
-      const { data, error } = await supabase.functions.invoke("discord-user-info", {
-        body: { token: newToken.trim(), action: "add" },
-      });
+      const { data, error } = await supabase.functions.invoke("discord-user-info", { body: { token: newToken.trim(), action: "add" } });
       if (error) throw error;
       toast.success(`تم إضافة ${data.discord_user.display_name}`);
       setNewToken("");
@@ -144,9 +128,7 @@ export default function Dashboard() {
 
   const deleteToken = async (tokenId: string) => {
     try {
-      const { error } = await supabase.functions.invoke("discord-user-info", {
-        body: { action: "delete", tokenId },
-      });
+      const { error } = await supabase.functions.invoke("discord-user-info", { body: { action: "delete", tokenId } });
       if (error) throw error;
       toast.success("تم حذف التوكن");
       if (selectedToken?.id === tokenId) setSelectedToken(null);
@@ -154,27 +136,21 @@ export default function Dashboard() {
     } catch { toast.error("خطأ في حذف التوكن"); }
   };
 
-  // Get stored token from DB via edge function
   const getStoredToken = async (tokenId: string): Promise<string | null> => {
     try {
-      const { data, error } = await supabase.functions.invoke("discord-user-info", {
-        body: { action: "get_token", tokenId },
-      });
+      const { data, error } = await supabase.functions.invoke("discord-user-info", { body: { action: "get_token", tokenId } });
       if (error) throw error;
       return data?.token || null;
     } catch { return null; }
   };
 
-  // Quest fetching - uses stored token
   const fetchQuests = async () => {
     if (!selectedToken) return toast.error("اختر توكن أولاً");
     setLoadingQuests(true);
     try {
       const token = await getStoredToken(selectedToken.id);
       if (!token) return toast.error("لم يتم العثور على التوكن");
-      const { data, error } = await supabase.functions.invoke("fetch-quests", {
-        body: { token },
-      });
+      const { data, error } = await supabase.functions.invoke("fetch-quests", { body: { token } });
       if (error) throw error;
       if (data?.quests) {
         setQuests(data.quests);
@@ -208,16 +184,23 @@ export default function Dashboard() {
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const storedTokenRef = useRef<string | null>(null);
 
-  // Cleanup polling on unmount
   useEffect(() => {
     return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, []);
 
   const stopPolling = () => {
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
+    if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+  };
+
+  const resetQuestState = () => {
+    stopPolling();
+    setSessionId(null);
+    setSessionStatus("idle");
+    setLogs([]);
+    setSelectedQuest(null);
+    loadStats();
+    loadRecentSessions();
+    loadCompletedQuests();
   };
 
   const startPolling = (sid: string) => {
@@ -229,9 +212,7 @@ export default function Dashboard() {
       try {
         const token = storedTokenRef.current;
         if (!token) return;
-        const { data, error } = await supabase.functions.invoke("quest-heartbeat", {
-          body: { sessionId: sid, token },
-        });
+        const { data, error } = await supabase.functions.invoke("quest-heartbeat", { body: { sessionId: sid, token } });
         if (error) throw error;
 
         if (data?.progress !== undefined) {
@@ -242,10 +223,10 @@ export default function Dashboard() {
           stopPolling();
           setSessionStatus(data.status);
           if (data.status === "completed") {
-            toast.success("✅ تم إكمال المهمة!");
+            toast.success("✅ تم إكمال المهمة بنجاح!");
             setLogs(prev => [...prev, "✅ تم إكمال المهمة بنجاح!"]);
-            loadStats();
-            loadRecentSessions();
+            // Auto-reset after 3 seconds
+            setTimeout(() => resetQuestState(), 3000);
           } else if (data.status === "failed") {
             setLogs(prev => [...prev, `❌ فشلت المهمة: ${data.error || ""}`]);
           }
@@ -275,7 +256,6 @@ export default function Dashboard() {
       if (data?.session?.id) {
         setSessionId(data.session.id);
         setLogs(prev => [...prev, "✅ تم إنشاء الجلسة، بدء إرسال heartbeats..."]);
-        // Start client-side polling
         startPolling(data.session.id);
       }
     } catch (err: any) {
@@ -287,70 +267,66 @@ export default function Dashboard() {
   const controlQuest = async (action: "pause" | "resume" | "stop") => {
     if (!sessionId) return;
     try {
-      const { data, error } = await supabase.functions.invoke("pause-quest", {
-        body: { sessionId, action },
-      });
+      const { data, error } = await supabase.functions.invoke("pause-quest", { body: { sessionId, action } });
       if (error) throw error;
       setSessionStatus(data.status);
       setLogs(prev => [...prev, data.message]);
-      if (action === "stop") {
-        stopPolling();
-        setSessionId(null);
-        setSessionStatus("idle");
-      } else if (action === "pause") {
-        stopPolling();
-      } else if (action === "resume") {
-        startPolling(sessionId);
-      }
+      if (action === "stop") { resetQuestState(); }
+      else if (action === "pause") { stopPolling(); }
+      else if (action === "resume") { startPolling(sessionId); }
     } catch (err: any) { toast.error(err.message); }
   };
 
   const isActive = sessionStatus === "running" || sessionStatus === "paused";
+  const isQuestCompleted = (questId: string) => completedQuestIds.has(questId);
 
   const statusColors: Record<string, string> = {
-    completed: "bg-success/20 text-success",
-    running: "bg-warning/20 text-warning",
-    failed: "bg-destructive/20 text-destructive",
-    stopped: "bg-muted text-muted-foreground",
-    paused: "bg-accent/20 text-accent",
-    pending: "bg-secondary text-secondary-foreground",
+    completed: "bg-success/15 text-success border border-success/20",
+    running: "bg-warning/15 text-warning border border-warning/20",
+    failed: "bg-destructive/15 text-destructive border border-destructive/20",
+    stopped: "bg-muted/50 text-muted-foreground border border-border/30",
+    paused: "bg-foreground/5 text-foreground/70 border border-border/30",
+    pending: "bg-secondary text-secondary-foreground border border-border/30",
   };
   const statusLabels: Record<string, string> = {
     completed: "مكتمل", running: "قيد التشغيل", failed: "فشل",
     stopped: "متوقف", paused: "متوقف مؤقتاً", pending: "معلق",
   };
 
+  const statItems = [
+    { icon: Swords, label: "إجمالي الجلسات", value: stats.totalSessions, emoji: statusIcons.quest },
+    { icon: Trophy, label: "المهمات المكتملة", value: stats.completedSessions, emoji: statusIcons.success },
+    { icon: Activity, label: "جلسات نشطة", value: stats.runningSessions, emoji: statusIcons.online },
+    { icon: TrendingUp, label: "إجمالي الحلول", value: stats.totalSolved, emoji: statusIcons.check },
+  ];
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4">
-        <div className="p-3 rounded-2xl bg-primary/20 glow-sm">
-          <Zap className="w-7 h-7 text-primary" />
-        </div>
+        <motion.div 
+          className="p-3 rounded-2xl bg-foreground/5 border border-border/40 glow-white-sm"
+          whileHover={{ scale: 1.05 }}
+        >
+          <Zap className="w-7 h-7 text-foreground" />
+        </motion.div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            مرحباً، {user?.email?.split("@")[0]} 👋
-          </h1>
-          <p className="text-muted-foreground">إليك ملخص نشاطك ولوحة التحكم</p>
+          <h1 className="text-2xl font-bold text-foreground">مرحباً، {user?.email?.split("@")[0]} 👋</h1>
+          <p className="text-muted-foreground text-sm">إليك ملخص نشاطك ولوحة التحكم</p>
         </div>
       </motion.div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { icon: Swords, label: "إجمالي الجلسات", value: stats.totalSessions, color: "bg-primary/20 text-primary", emoji: statusIcons.quest },
-          { icon: Trophy, label: "المهمات المكتملة", value: stats.completedSessions, color: "bg-success/20 text-success", emoji: statusIcons.success },
-          { icon: Activity, label: "جلسات نشطة", value: stats.runningSessions, color: "bg-warning/20 text-warning", emoji: statusIcons.online },
-          { icon: TrendingUp, label: "إجمالي الحلول", value: stats.totalSolved, color: "bg-accent/20 text-accent", emoji: statusIcons.check },
-        ].map((s, i) => (
-          <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-            className="glass rounded-3xl p-5 hover:glow-sm transition-all group">
+        {statItems.map((s, i) => (
+          <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
+            className={cardClass + " p-5 group"}>
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
-                <p className="text-2xl font-bold text-foreground">{s.value}</p>
+                <p className="text-3xl font-bold text-foreground">{s.value}</p>
               </div>
-              <img src={s.emoji} alt="" className="w-8 h-8 group-hover:scale-110 transition-transform" />
+              <img src={s.emoji} alt="" className="w-8 h-8 opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
             </div>
           </motion.div>
         ))}
@@ -360,48 +336,40 @@ export default function Dashboard() {
       <AnimatePresence>
         {showAddModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-md p-4"
             onClick={() => setShowAddModal(false)}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="glass rounded-3xl p-8 max-w-md w-full glow-primary" onClick={e => e.stopPropagation()}>
+            <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="rounded-3xl bg-card border border-border/40 p-8 max-w-md w-full glow-white-lg" onClick={e => e.stopPropagation()}>
               <div className="text-center mb-6">
                 <img src={statusIcons.discord} alt="" className="w-12 h-12 mx-auto mb-3" />
                 <h2 className="text-xl font-bold text-foreground">إضافة توكن Discord</h2>
                 <p className="text-sm text-muted-foreground mt-2">أدخل التوكن وسيتم حفظه بشكل آمن</p>
               </div>
 
-              <div className="rounded-2xl bg-warning/10 border border-warning/30 p-4 mb-5">
+              <div className="rounded-2xl bg-warning/5 border border-warning/20 p-4 mb-5">
                 <p className="text-sm text-warning font-medium flex items-center gap-2">
-                  <Shield className="w-4 h-4 shrink-0" />
-                  ⚠️ تنبيه مهم
+                  <Shield className="w-4 h-4 shrink-0" />⚠️ تنبيه مهم
                 </p>
-                <p className="text-xs text-warning/80 mt-1 leading-relaxed">
-                  استخدم توكن حساب وهمي (Alt Account) وليس حسابك الأساسي تجنباً لأي مشاكل. نحن غير مسؤولين عن أي إجراءات تتخذ ضد الحساب.
+                <p className="text-xs text-warning/70 mt-1 leading-relaxed">
+                  استخدم توكن حساب وهمي (Alt Account) وليس حسابك الأساسي تجنباً لأي مشاكل.
                 </p>
               </div>
 
               <div className="relative mb-4">
                 <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input type="password" value={newToken} onChange={e => setNewToken(e.target.value)}
-                  placeholder="أدخل توكن Discord هنا" className="pl-10 h-12 rounded-2xl bg-secondary/50 border-border/50 text-base" />
+                  placeholder="أدخل توكن Discord هنا" className="pl-10 h-12 rounded-2xl bg-secondary/50 border-border/40 text-base" />
               </div>
 
               <div className="flex gap-3">
-                <Button onClick={() => setShowAddModal(false)} variant="ghost" className="flex-1 h-12 rounded-2xl">
+                <Button onClick={() => setShowAddModal(false)} variant="ghost" className="flex-1 h-12 rounded-2xl border border-border/30">
                   إلغاء
                 </Button>
-                <Button onClick={addToken} disabled={addingToken} className="flex-1 h-12 rounded-2xl bg-primary hover:bg-primary/90 glow-sm">
-                  {addingToken ? <RefreshCw className="w-4 h-4 animate-spin" /> : <>
-                    <img src={statusIcons.check} alt="" className="w-4 h-4 ml-1" />
-                    حفظ التوكن
-                  </>}
+                <Button onClick={addToken} disabled={addingToken} className="flex-1 h-12 rounded-2xl bg-foreground text-background hover:bg-foreground/90">
+                  {addingToken ? <RefreshCw className="w-4 h-4 animate-spin" /> : <>حفظ التوكن</>}
                 </Button>
               </div>
-
-              <p className="text-xs text-muted-foreground mt-4 text-center flex items-center justify-center gap-1">
-                <img src={statusIcons.password} alt="" className="w-3 h-3" />
-                التوكن محمي ومخفي ومحفوظ بقاعدة البيانات فقط
-              </p>
             </motion.div>
           </motion.div>
         )}
@@ -409,22 +377,20 @@ export default function Dashboard() {
 
       {/* Token Management */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-        className="glass rounded-3xl p-6">
+        className={cardClass + " p-6"}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <img src={statusIcons.discord} alt="" className="w-5 h-5" />
             التوكنات المحفوظة
           </h2>
-          <Button onClick={() => setShowAddModal(true)} size="sm" className="rounded-2xl bg-primary/20 text-primary hover:bg-primary/30">
-            <Plus className="w-4 h-4 ml-1" />
-            إضافة توكن
+          <Button onClick={() => setShowAddModal(true)} size="sm" className="rounded-2xl bg-foreground/5 text-foreground hover:bg-foreground/10 border border-border/30">
+            <Plus className="w-4 h-4 ml-1" />إضافة توكن
           </Button>
         </div>
 
-        {/* Token Cards */}
         {tokens.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <img src={statusIcons.customer} alt="" className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <img src={statusIcons.customer} alt="" className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p>لا توجد توكنات محفوظة</p>
             <p className="text-sm">أضف توكن Discord للبدء</p>
           </div>
@@ -436,35 +402,27 @@ export default function Dashboard() {
               return (
                 <motion.div key={t.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
                   onClick={() => setSelectedToken(t)}
-                  className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all ${isSelected ? "bg-primary/15 ring-2 ring-primary glow-sm" : "bg-secondary/30 hover:bg-secondary/50"}`}>
+                  className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all duration-300 ${isSelected ? "bg-foreground/5 ring-1 ring-foreground/20 glow-white-sm" : "bg-secondary/30 hover:bg-secondary/50"}`}>
                   <div className="relative">
                     {t.avatar_url ? (
                       <img src={t.avatar_url} alt="" className="w-12 h-12 rounded-2xl object-cover" />
                     ) : (
-                      <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                        <User className="w-5 h-5 text-primary" />
+                      <div className="w-12 h-12 rounded-2xl bg-foreground/5 flex items-center justify-center">
+                        <User className="w-5 h-5 text-muted-foreground" />
                       </div>
                     )}
                     {(t.boost_months || 0) > 0 && (
                       <img src={getBoostImage(t.boost_months || 0)} alt={`Boost ${boostLevel}`}
-                        className="absolute -bottom-1 -right-1 w-5 h-5" title={`بوست المستوى ${boostLevel}`} />
+                        className="absolute -bottom-1 -right-1 w-5 h-5" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <p className="font-medium text-foreground truncate">{t.display_name || t.discord_username || "Unknown"}</p>
-                      <img src={statusIcons.check} alt="" className="w-4 h-4" />
-                    </div>
+                    <p className="font-medium text-foreground truncate">{t.display_name || t.discord_username || "Unknown"}</p>
                     <p className="text-xs text-muted-foreground truncate">@{t.discord_username}</p>
-                    {(t.boost_months || 0) > 0 && (
-                      <p className="text-xs text-primary mt-0.5">
-                        بوست المستوى {boostLevel} • {t.boost_months} شهر
-                      </p>
-                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <img src={statusIcons.online} alt="" className="w-4 h-4" />
-                    <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 rounded-xl p-2 h-8 w-8"
+                    <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive rounded-xl p-2 h-8 w-8"
                       onClick={(e) => { e.stopPropagation(); deleteToken(t.id); }}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
@@ -479,13 +437,13 @@ export default function Dashboard() {
       {/* Quest Solver Section */}
       {selectedToken && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-          className="glass rounded-3xl p-6">
+          className={cardClass + " p-6"}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <img src={statusIcons.quest} alt="" className="w-5 h-5" />
               حل المهمات — {selectedToken.display_name || selectedToken.discord_username}
             </h2>
-            <Button onClick={fetchQuests} disabled={loadingQuests || isActive} className="rounded-2xl bg-primary hover:bg-primary/90 glow-sm">
+            <Button onClick={fetchQuests} disabled={loadingQuests || isActive} className="rounded-2xl bg-foreground text-background hover:bg-foreground/90">
               {loadingQuests ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Search className="w-4 h-4 ml-1" />جلب المهمات</>}
             </Button>
           </div>
@@ -496,42 +454,44 @@ export default function Dashboard() {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 {quests.map((quest, i) => {
                   const rewardIcon = getRewardIcon(quest.reward_name);
+                  const alreadyCompleted = quest.completed || isQuestCompleted(quest.id);
                   return (
                     <motion.div key={quest.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}
                       onClick={() => !isActive && setSelectedQuest(quest)}
-                      className={`rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 hover:glow-sm border border-border/50 ${selectedQuest?.id === quest.id ? "ring-2 ring-primary glow-primary" : "bg-secondary/20"}`}>
+                      className={`rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 border border-border/30 ${
+                        selectedQuest?.id === quest.id ? "ring-1 ring-foreground/30 glow-white" : "bg-secondary/10 hover:bg-secondary/20"
+                      } ${alreadyCompleted ? "opacity-60" : ""}`}>
                       {quest.hero_image && (
                         <div className="h-28 overflow-hidden relative">
                           <img src={quest.hero_image} alt={quest.name} className="w-full h-full object-cover"
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                          {quest.completed && (
-                            <div className="absolute top-2 right-2">
-                              <img src={statusIcons.success} alt="completed" className="w-6 h-6" />
+                          {alreadyCompleted && (
+                            <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
+                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-success/20 border border-success/30">
+                                <CheckCircle className="w-4 h-4 text-success" />
+                                <span className="text-xs text-success font-medium">مكتملة</span>
+                              </div>
                             </div>
                           )}
                         </div>
                       )}
                       <div className="p-4">
                         <div className="flex items-start justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-foreground text-sm">{quest.name}</h3>
-                            <img src={statusIcons.check} alt="" className="w-4 h-4" />
-                          </div>
-                          {quest.completed ? (
-                            <img src={statusIcons.success} alt="" className="w-5 h-5" />
+                          <h3 className="font-semibold text-foreground text-sm">{quest.name}</h3>
+                          {alreadyCompleted ? (
+                            <CheckCircle className="w-5 h-5 text-success shrink-0" />
                           ) : quest.supported ? (
-                            <Sparkles className="w-5 h-5 text-primary" />
+                            <Sparkles className="w-5 h-5 text-foreground/50 shrink-0" />
                           ) : (
-                            <img src={statusIcons.notsupported} alt="" className="w-5 h-5" />
+                            <XCircle className="w-5 h-5 text-muted-foreground shrink-0" />
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground">{quest.game_title}</p>
                         <div className="flex items-center gap-1 mt-1">
                           {rewardIcon && <img src={rewardIcon} alt="" className="w-4 h-4" />}
-                          <p className="text-xs text-primary font-medium">{quest.reward_name}</p>
+                          <p className="text-xs text-foreground/60 font-medium">{quest.reward_name}</p>
                         </div>
 
-                        {/* Tasks with type icons */}
                         {quest.tasks?.map(task => {
                           const taskIcon = questTypeIcons[task.id];
                           return (
@@ -543,9 +503,9 @@ export default function Dashboard() {
                                 </span>
                                 <span>{task.percent}%</span>
                               </div>
-                              <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                              <div className="h-1.5 rounded-full bg-secondary/50 overflow-hidden">
                                 <motion.div initial={{ width: 0 }} animate={{ width: `${task.percent}%` }}
-                                  className="h-full rounded-full bg-primary" transition={{ duration: 0.8 }} />
+                                  className="h-full rounded-full bg-foreground/80" transition={{ duration: 0.8 }} />
                               </div>
                             </div>
                           );
@@ -553,7 +513,7 @@ export default function Dashboard() {
 
                         {quest.expires_at && (
                           <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                            <img src={statusIcons.expire} alt="" className="w-3 h-3" />
+                            <Clock className="w-3 h-3" />
                             تنتهي: {new Date(quest.expires_at).toLocaleDateString("ar")}
                           </p>
                         )}
@@ -567,7 +527,11 @@ export default function Dashboard() {
 
           {/* Controls */}
           {selectedQuest && (
-            <div className="rounded-2xl bg-secondary/30 p-4">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-2xl bg-secondary/20 border border-border/20 p-4"
+            >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <img src={statusIcons.quest} alt="" className="w-6 h-6" />
@@ -575,37 +539,46 @@ export default function Dashboard() {
                     <h3 className="font-semibold text-foreground text-sm">{selectedQuest.name}</h3>
                     <p className="text-xs text-muted-foreground">{selectedQuest.game_title}</p>
                     {isActive && (
-                      <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${sessionStatus === "running" ? "bg-success/20 text-success" : "bg-warning/20 text-warning"}`}>
-                        <img src={sessionStatus === "running" ? statusIcons.online : statusIcons.timer} alt="" className="w-3 h-3 inline mr-1" />
+                      <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${sessionStatus === "running" ? "bg-success/15 text-success" : "bg-warning/15 text-warning"}`}>
                         {sessionStatus === "running" ? "قيد التشغيل" : "متوقف مؤقتاً"}
+                      </span>
+                    )}
+                    {sessionStatus === "completed" && (
+                      <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success/15 text-success">
+                        ✅ مكتملة — يتم إعادة التعيين...
                       </span>
                     )}
                   </div>
                 </div>
                 <div className="flex gap-2">
                   {sessionStatus === "idle" && (
-                    <Button onClick={startSolving} disabled={!selectedQuest.supported || selectedQuest.completed}
-                      className="rounded-2xl bg-success hover:bg-success/90 text-success-foreground glow-sm text-sm">
-                      <img src={statusIcons.start} alt="" className="w-4 h-4 ml-1" /> بدء
+                    <Button onClick={startSolving} 
+                      disabled={!selectedQuest.supported || selectedQuest.completed || isQuestCompleted(selectedQuest.id)}
+                      className="rounded-2xl bg-foreground text-background hover:bg-foreground/90 text-sm disabled:opacity-30">
+                      {isQuestCompleted(selectedQuest.id) || selectedQuest.completed ? (
+                        <><CheckCircle className="w-4 h-4 ml-1" /> مكتملة مسبقاً</>
+                      ) : (
+                        <><Play className="w-4 h-4 ml-1" /> بدء</>
+                      )}
                     </Button>
                   )}
                   {sessionStatus === "running" && (
                     <>
-                      <Button onClick={() => controlQuest("pause")} className="rounded-2xl bg-warning hover:bg-warning/90 text-warning-foreground text-sm">
+                      <Button onClick={() => controlQuest("pause")} className="rounded-2xl bg-warning/10 text-warning hover:bg-warning/20 border border-warning/20 text-sm">
                         <Pause className="w-4 h-4 ml-1" /> إيقاف مؤقت
                       </Button>
-                      <Button onClick={() => controlQuest("stop")} variant="destructive" className="rounded-2xl text-sm">
-                        <img src={statusIcons.stop} alt="" className="w-4 h-4 ml-1" /> إيقاف
+                      <Button onClick={() => controlQuest("stop")} className="rounded-2xl bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 text-sm">
+                        <Square className="w-4 h-4 ml-1" /> إيقاف
                       </Button>
                     </>
                   )}
                   {sessionStatus === "paused" && (
                     <>
-                      <Button onClick={() => controlQuest("resume")} className="rounded-2xl bg-success hover:bg-success/90 text-success-foreground glow-sm text-sm">
+                      <Button onClick={() => controlQuest("resume")} className="rounded-2xl bg-foreground text-background hover:bg-foreground/90 text-sm">
                         <RotateCcw className="w-4 h-4 ml-1" /> استئناف
                       </Button>
-                      <Button onClick={() => controlQuest("stop")} variant="destructive" className="rounded-2xl text-sm">
-                        <img src={statusIcons.stop} alt="" className="w-4 h-4 ml-1" /> إيقاف
+                      <Button onClick={() => controlQuest("stop")} className="rounded-2xl bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 text-sm">
+                        <Square className="w-4 h-4 ml-1" /> إيقاف
                       </Button>
                     </>
                   )}
@@ -613,37 +586,44 @@ export default function Dashboard() {
               </div>
 
               {/* Logs */}
-              {logs.length > 0 && (
-                <div className="bg-background/80 rounded-2xl p-3 font-mono text-xs max-h-48 overflow-y-auto space-y-0.5">
-                  {logs.map((log, i) => (
-                    <motion.div key={i} initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} className="text-muted-foreground">
-                      <span className="text-primary/50">[{i + 1}]</span> {log}
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </div>
+              <AnimatePresence>
+                {logs.length > 0 && sessionStatus !== "idle" && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-background/60 rounded-2xl p-3 font-mono text-xs max-h-48 overflow-y-auto space-y-0.5 border border-border/20"
+                  >
+                    {logs.map((log, i) => (
+                      <motion.div key={i} initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} className="text-muted-foreground">
+                        <span className="text-foreground/30">[{i + 1}]</span> {log}
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
           )}
         </motion.div>
       )}
 
       {/* Recent Sessions */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-        className="glass rounded-3xl p-6">
+        className={cardClass + " p-6"}>
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <img src={statusIcons.log} alt="" className="w-5 h-5" />
           آخر الجلسات
         </h2>
         {recentSessions.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <img src={statusIcons.messages} alt="" className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <img src={statusIcons.messages} alt="" className="w-12 h-12 mx-auto mb-3 opacity-20" />
             <p>لا توجد جلسات بعد</p>
           </div>
         ) : (
           <div className="space-y-2">
             {recentSessions.map((session, i) => (
               <motion.div key={session.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
-                className="flex items-center gap-4 p-3 rounded-2xl bg-secondary/30 hover:bg-secondary/50 transition-all">
+                className="flex items-center gap-4 p-3 rounded-2xl bg-secondary/20 hover:bg-secondary/30 transition-all border border-border/10">
                 {session.hero_image ? (
                   <img src={session.hero_image} alt="" className="w-10 h-10 rounded-xl object-cover"
                     onError={(e) => { (e.target as HTMLImageElement).src = statusIcons.quest; }} />
@@ -666,24 +646,6 @@ export default function Dashboard() {
             ))}
           </div>
         )}
-      </motion.div>
-
-      {/* Boost Levels Reference */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-        className="glass rounded-3xl p-6">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <img src={boostLevelImages[1]} alt="" className="w-5 h-5" />
-          مستويات البوست
-        </h2>
-        <div className="flex flex-wrap gap-3">
-          {boostLevels.map(bl => (
-            <div key={bl.level} className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-secondary/30 text-sm">
-              <img src={boostLevelImages[bl.level]} alt="" className="w-5 h-5" />
-              <span className="text-muted-foreground">المستوى {bl.level}</span>
-              <span className="text-xs text-primary">{bl.months} شهر</span>
-            </div>
-          ))}
-        </div>
       </motion.div>
     </div>
   );
