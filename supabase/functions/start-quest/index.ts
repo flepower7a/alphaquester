@@ -129,6 +129,28 @@ async function solveQuest(
 
   try {
     for (let i = 0; i < maxIterations; i++) {
+      // Check if session was paused or stopped
+      const { data: currentSession } = await supabase
+        .from("quest_sessions")
+        .select("status")
+        .eq("id", sessionId)
+        .single();
+
+      if (currentSession?.status === "stopped") {
+        await supabase.from("quest_logs").insert({
+          session_id: sessionId, user_id: userId,
+          message: "⏹️ تم إيقاف المهمة بواسطة المستخدم", level: "warning",
+        });
+        break;
+      }
+
+      if (currentSession?.status === "paused") {
+        // Wait and re-check every 5 seconds while paused
+        await new Promise((r) => setTimeout(r, 5000));
+        i--; // Don't count paused iterations
+        continue;
+      }
+
       let endpoint: string;
       let body: any;
 
@@ -179,7 +201,6 @@ async function solveQuest(
         });
 
         if (completed || progress >= target) {
-          // Increment profile counter
           const { data: profile } = await supabase
             .from("profiles")
             .select("total_solved_quests")

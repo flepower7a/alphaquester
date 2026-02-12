@@ -157,6 +157,7 @@ function RecentSessions() {
     running: "bg-warning/20 text-warning",
     failed: "bg-destructive/20 text-destructive",
     stopped: "bg-muted text-muted-foreground",
+    paused: "bg-accent/20 text-accent",
     pending: "bg-secondary text-secondary-foreground",
   };
 
@@ -165,6 +166,7 @@ function RecentSessions() {
     running: "قيد التشغيل",
     failed: "فشل",
     stopped: "متوقف",
+    paused: "متوقف مؤقتاً",
     pending: "معلق",
   };
 
