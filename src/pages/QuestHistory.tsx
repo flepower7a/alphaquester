@@ -79,13 +79,9 @@ export default function QuestHistory() {
             <motion.div key={session.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
               className={cardClass + " p-5"}>
               <div className="flex items-center gap-4">
-                {session.hero_image ? (
-                  <img src={session.hero_image} alt="" className="w-16 h-16 rounded-2xl object-cover" />
-                ) : (
-                  <div className="w-16 h-16 rounded-2xl bg-foreground/5 border border-border/30 flex items-center justify-center">
-                    <Swords className="w-6 h-6 text-muted-foreground" />
-                  </div>
-                )}
+                <div className="w-16 h-16 rounded-2xl bg-foreground/5 border border-border/30 flex items-center justify-center">
+                  <img src="/emojis/quest.png" alt="" className="w-8 h-8" />
+                </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-foreground truncate">{session.quest_name || session.quest_id}</h3>
                   <p className="text-sm text-muted-foreground">{session.game_title}</p>
