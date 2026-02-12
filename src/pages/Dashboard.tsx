@@ -55,7 +55,7 @@ export default function Dashboard() {
   const [selectedToken, setSelectedToken] = useState<TokenRecord | null>(null);
   const [newToken, setNewToken] = useState("");
   const [addingToken, setAddingToken] = useState(false);
-  const [showAddToken, setShowAddToken] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   // Quest solving state
   const [quests, setQuests] = useState<QuestData[]>([]);
@@ -64,7 +64,6 @@ export default function Dashboard() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionStatus, setSessionStatus] = useState<string>("idle");
   const [logs, setLogs] = useState<string[]>([]);
-  const [activeToken, setActiveToken] = useState(""); // actual token for API calls
 
   // Stats
   const [stats, setStats] = useState<SessionStats>({ totalSessions: 0, completedSessions: 0, runningSessions: 0, totalSolved: 0 });
@@ -134,7 +133,7 @@ export default function Dashboard() {
       if (error) throw error;
       toast.success(`تم إضافة ${data.discord_user.display_name}`);
       setNewToken("");
-      setShowAddToken(false);
+      setShowAddModal(false);
       loadTokens();
     } catch (err: any) {
       toast.error(err.message || "توكن غير صالح");
@@ -155,13 +154,26 @@ export default function Dashboard() {
     } catch { toast.error("خطأ في حذف التوكن"); }
   };
 
-  // Quest fetching
+  // Get stored token from DB via edge function
+  const getStoredToken = async (tokenId: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke("discord-user-info", {
+        body: { action: "get_token", tokenId },
+      });
+      if (error) throw error;
+      return data?.token || null;
+    } catch { return null; }
+  };
+
+  // Quest fetching - uses stored token
   const fetchQuests = async () => {
-    if (!activeToken.trim()) return toast.error("أدخل التوكن أولاً للتوكن المحدد");
+    if (!selectedToken) return toast.error("اختر توكن أولاً");
     setLoadingQuests(true);
     try {
+      const token = await getStoredToken(selectedToken.id);
+      if (!token) return toast.error("لم يتم العثور على التوكن");
       const { data, error } = await supabase.functions.invoke("fetch-quests", {
-        body: { token: activeToken },
+        body: { token },
       });
       if (error) throw error;
       if (data?.quests) {
@@ -194,12 +206,14 @@ export default function Dashboard() {
   }, [sessionId]);
 
   const startSolving = async () => {
-    if (!selectedQuest || !activeToken) return;
+    if (!selectedQuest || !selectedToken) return;
     setSessionStatus("running");
     setLogs(["⏳ جاري بدء حل المهمة..."]);
     try {
+      const token = await getStoredToken(selectedToken.id);
+      if (!token) { setSessionStatus("idle"); return toast.error("لم يتم العثور على التوكن"); }
       const { data, error } = await supabase.functions.invoke("start-quest", {
-        body: { token: activeToken, questId: selectedQuest.id, method: selectedQuest.method },
+        body: { token, questId: selectedQuest.id, method: selectedQuest.method },
       });
       if (error) throw error;
       if (data?.session?.id) setSessionId(data.session.id);
@@ -274,6 +288,57 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* Floating Add Token Modal */}
+      <AnimatePresence>
+        {showAddModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+            onClick={() => setShowAddModal(false)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="glass rounded-3xl p-8 max-w-md w-full glow-primary" onClick={e => e.stopPropagation()}>
+              <div className="text-center mb-6">
+                <img src={statusIcons.discord} alt="" className="w-12 h-12 mx-auto mb-3" />
+                <h2 className="text-xl font-bold text-foreground">إضافة توكن Discord</h2>
+                <p className="text-sm text-muted-foreground mt-2">أدخل التوكن وسيتم حفظه بشكل آمن</p>
+              </div>
+
+              <div className="rounded-2xl bg-warning/10 border border-warning/30 p-4 mb-5">
+                <p className="text-sm text-warning font-medium flex items-center gap-2">
+                  <Shield className="w-4 h-4 shrink-0" />
+                  ⚠️ تنبيه مهم
+                </p>
+                <p className="text-xs text-warning/80 mt-1 leading-relaxed">
+                  استخدم توكن حساب وهمي (Alt Account) وليس حسابك الأساسي تجنباً لأي مشاكل. نحن غير مسؤولين عن أي إجراءات تتخذ ضد الحساب.
+                </p>
+              </div>
+
+              <div className="relative mb-4">
+                <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input type="password" value={newToken} onChange={e => setNewToken(e.target.value)}
+                  placeholder="أدخل توكن Discord هنا" className="pl-10 h-12 rounded-2xl bg-secondary/50 border-border/50 text-base" />
+              </div>
+
+              <div className="flex gap-3">
+                <Button onClick={() => setShowAddModal(false)} variant="ghost" className="flex-1 h-12 rounded-2xl">
+                  إلغاء
+                </Button>
+                <Button onClick={addToken} disabled={addingToken} className="flex-1 h-12 rounded-2xl bg-primary hover:bg-primary/90 glow-sm">
+                  {addingToken ? <RefreshCw className="w-4 h-4 animate-spin" /> : <>
+                    <img src={statusIcons.check} alt="" className="w-4 h-4 ml-1" />
+                    حفظ التوكن
+                  </>}
+                </Button>
+              </div>
+
+              <p className="text-xs text-muted-foreground mt-4 text-center flex items-center justify-center gap-1">
+                <img src={statusIcons.password} alt="" className="w-3 h-3" />
+                التوكن محمي ومخفي ومحفوظ بقاعدة البيانات فقط
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Token Management */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
         className="glass rounded-3xl p-6">
@@ -282,34 +347,11 @@ export default function Dashboard() {
             <img src={statusIcons.discord} alt="" className="w-5 h-5" />
             التوكنات المحفوظة
           </h2>
-          <Button onClick={() => setShowAddToken(!showAddToken)} size="sm" className="rounded-2xl bg-primary/20 text-primary hover:bg-primary/30">
+          <Button onClick={() => setShowAddModal(true)} size="sm" className="rounded-2xl bg-primary/20 text-primary hover:bg-primary/30">
             <Plus className="w-4 h-4 ml-1" />
             إضافة توكن
           </Button>
         </div>
-
-        {/* Add Token Form */}
-        <AnimatePresence>
-          {showAddToken && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden mb-4">
-              <div className="flex gap-3 p-4 rounded-2xl bg-secondary/30">
-                <div className="flex-1 relative">
-                  <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input type="password" value={newToken} onChange={e => setNewToken(e.target.value)}
-                    placeholder="أدخل توكن Discord" className="pl-10 h-11 rounded-2xl bg-background/50 border-border/50" />
-                </div>
-                <Button onClick={addToken} disabled={addingToken} className="rounded-2xl bg-success hover:bg-success/90 text-success-foreground h-11">
-                  {addingToken ? <RefreshCw className="w-4 h-4 animate-spin" /> : "إضافة"}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                <img src={statusIcons.password} alt="" className="w-3 h-3" />
-                التوكن يُخزن بشكل آمن ومشفر
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Token Cards */}
         {tokens.length === 0 ? (
@@ -370,20 +412,13 @@ export default function Dashboard() {
       {selectedToken && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
           className="glass rounded-3xl p-6">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <img src={statusIcons.quest} alt="" className="w-5 h-5" />
-            حل المهمات — {selectedToken.display_name || selectedToken.discord_username}
-          </h2>
-
-          {/* Token Input for solving */}
-          <div className="flex gap-3 mb-4">
-            <div className="flex-1 relative">
-              <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input type="password" value={activeToken} onChange={e => setActiveToken(e.target.value)}
-                placeholder="أدخل التوكن لبدء جلب المهمات" className="pl-10 h-11 rounded-2xl bg-secondary/50 border-border/50" disabled={isActive} />
-            </div>
-            <Button onClick={fetchQuests} disabled={loadingQuests || isActive} className="h-11 rounded-2xl bg-primary hover:bg-primary/90 glow-sm">
-              {loadingQuests ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Search className="w-4 h-4 ml-1" />جلب</>}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <img src={statusIcons.quest} alt="" className="w-5 h-5" />
+              حل المهمات — {selectedToken.display_name || selectedToken.discord_username}
+            </h2>
+            <Button onClick={fetchQuests} disabled={loadingQuests || isActive} className="rounded-2xl bg-primary hover:bg-primary/90 glow-sm">
+              {loadingQuests ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Search className="w-4 h-4 ml-1" />جلب المهمات</>}
             </Button>
           </div>
 

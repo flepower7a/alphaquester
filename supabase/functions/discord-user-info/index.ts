@@ -98,11 +98,11 @@ serve(async (req) => {
 
       let result;
       if (existing) {
-        // Update existing
         const { data: updated, error } = await supabase
           .from("discord_tokens")
           .update({
             token_hash: tokenHash,
+            encrypted_token: token.trim(),
             discord_username: discordUser.username,
             display_name: displayName,
             avatar_url: avatarUrl,
@@ -117,12 +117,12 @@ serve(async (req) => {
         if (error) throw error;
         result = updated;
       } else {
-        // Insert new
         const { data: inserted, error } = await supabase
           .from("discord_tokens")
           .insert({
             user_id: user.id,
             token_hash: tokenHash,
+            encrypted_token: token.trim(),
             discord_user_id: discordUser.id,
             discord_username: discordUser.username,
             display_name: displayName,
@@ -136,24 +136,45 @@ serve(async (req) => {
         result = inserted;
       }
 
-      // Store the actual token encrypted in memory only (we return it for session use)
+      // Don't expose token in response
+      const { encrypted_token: _, ...safeResult } = result;
       return new Response(JSON.stringify({
-        token_record: result,
+        token_record: safeResult,
         discord_user: { id: discordUser.id, username: discordUser.username, display_name: displayName, avatar_url: avatarUrl, boost_months: boostMonths },
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Action: refresh all tokens info
+    // Action: refresh all tokens info (exclude encrypted_token from response)
     if (action === "refresh") {
       const { data: tokens } = await supabase
         .from("discord_tokens")
-        .select("*")
+        .select("id, discord_user_id, discord_username, display_name, avatar_url, boost_months, nitro_type, is_active, created_at, last_used_at")
         .eq("user_id", user.id)
         .eq("is_active", true);
 
       return new Response(JSON.stringify({ tokens: tokens || [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Action: get token for quest operations (returns actual token server-side only)
+    if (action === "get_token" && tokenId) {
+      const { data: tokenRecord } = await supabase
+        .from("discord_tokens")
+        .select("encrypted_token")
+        .eq("id", tokenId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!tokenRecord?.encrypted_token) {
+        return new Response(JSON.stringify({ error: "Token not found" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ token: tokenRecord.encrypted_token }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
