@@ -22,6 +22,7 @@ export type Database = {
           discord_user_id: string | null
           discord_username: string | null
           display_name: string | null
+          encrypted_token: string | null
           id: string
           is_active: boolean | null
           last_used_at: string | null
@@ -36,6 +37,7 @@ export type Database = {
           discord_user_id?: string | null
           discord_username?: string | null
           display_name?: string | null
+          encrypted_token?: string | null
           id?: string
           is_active?: boolean | null
           last_used_at?: string | null
@@ -50,6 +52,7 @@ export type Database = {
           discord_user_id?: string | null
           discord_username?: string | null
           display_name?: string | null
+          encrypted_token?: string | null
           id?: string
           is_active?: boolean | null
           last_used_at?: string | null
