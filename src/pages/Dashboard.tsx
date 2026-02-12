@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -205,6 +205,59 @@ export default function Dashboard() {
     return () => { supabase.removeChannel(channel); };
   }, [sessionId]);
 
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const storedTokenRef = useRef<string | null>(null);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
+  }, []);
+
+  const stopPolling = () => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  };
+
+  const startPolling = (sid: string) => {
+    stopPolling();
+    const method = selectedQuest?.method;
+    const delay = (method === "WATCH_VIDEO" || method === "WATCH_VIDEO_ON_MOBILE") ? 6000 : 31000;
+
+    pollingRef.current = setInterval(async () => {
+      try {
+        const token = storedTokenRef.current;
+        if (!token) return;
+        const { data, error } = await supabase.functions.invoke("quest-heartbeat", {
+          body: { sessionId: sid, token },
+        });
+        if (error) throw error;
+
+        if (data?.progress !== undefined) {
+          setLogs(prev => [...prev, `📊 التقدم: ${data.progress}/${data.target}`]);
+        }
+
+        if (data?.done) {
+          stopPolling();
+          setSessionStatus(data.status);
+          if (data.status === "completed") {
+            toast.success("✅ تم إكمال المهمة!");
+            setLogs(prev => [...prev, "✅ تم إكمال المهمة بنجاح!"]);
+            loadStats();
+            loadRecentSessions();
+          } else if (data.status === "failed") {
+            setLogs(prev => [...prev, `❌ فشلت المهمة: ${data.error || ""}`]);
+          }
+        }
+      } catch (err: any) {
+        setLogs(prev => [...prev, `❌ خطأ: ${err.message}`]);
+        stopPolling();
+        setSessionStatus("failed");
+      }
+    }, delay);
+  };
+
   const startSolving = async () => {
     if (!selectedQuest || !selectedToken) return;
     setSessionStatus("running");
@@ -212,12 +265,19 @@ export default function Dashboard() {
     try {
       const token = await getStoredToken(selectedToken.id);
       if (!token) { setSessionStatus("idle"); return toast.error("لم يتم العثور على التوكن"); }
+      storedTokenRef.current = token;
+
       const { data, error } = await supabase.functions.invoke("start-quest", {
         body: { token, questId: selectedQuest.id, method: selectedQuest.method },
       });
       if (error) throw error;
-      if (data?.session?.id) setSessionId(data.session.id);
-      setLogs(prev => [...prev, "✅ تم بدء حل المهمة"]);
+
+      if (data?.session?.id) {
+        setSessionId(data.session.id);
+        setLogs(prev => [...prev, "✅ تم إنشاء الجلسة، بدء إرسال heartbeats..."]);
+        // Start client-side polling
+        startPolling(data.session.id);
+      }
     } catch (err: any) {
       setLogs(prev => [...prev, `❌ ${err.message}`]);
       setSessionStatus("idle");
@@ -233,7 +293,15 @@ export default function Dashboard() {
       if (error) throw error;
       setSessionStatus(data.status);
       setLogs(prev => [...prev, data.message]);
-      if (action === "stop") { setSessionId(null); setSessionStatus("idle"); }
+      if (action === "stop") {
+        stopPolling();
+        setSessionId(null);
+        setSessionStatus("idle");
+      } else if (action === "pause") {
+        stopPolling();
+      } else if (action === "resume") {
+        startPolling(sessionId);
+      }
     } catch (err: any) { toast.error(err.message); }
   };
 
