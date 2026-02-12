@@ -450,10 +450,51 @@ export default function Dashboard() {
         )}
       </motion.div>
 
+      {/* Recent Sessions - same column as tokens */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+        className={cardClass + " p-5 self-start lg:col-start-1 lg:row-start-2"}>
+        <h2 className="text-base font-semibold mb-3 flex items-center gap-2">
+          <img src={statusIcons.log} alt="" className="w-5 h-5" />
+          آخر الجلسات
+        </h2>
+        {recentSessions.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground">
+            <img src={statusIcons.messages} alt="" className="w-10 h-10 mx-auto mb-2 opacity-20" />
+            <p className="text-sm">لا توجد جلسات بعد</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {recentSessions.map((session, i) => (
+              <motion.div key={session.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
+                className="flex items-center gap-3 p-3 rounded-2xl bg-secondary/20 hover:bg-secondary/30 transition-all border border-border/10">
+                {session.hero_image ? (
+                  <img src={session.hero_image} alt="" className="w-9 h-9 rounded-xl object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).src = statusIcons.quest; }} />
+                ) : (
+                  <img src={statusIcons.quest} alt="" className="w-9 h-9 rounded-xl" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground text-sm truncate">{session.quest_name || session.quest_id}</p>
+                  <p className="text-xs text-muted-foreground truncate">{session.game_title || "مهمة"}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {session.target > 0 && (
+                    <span className="text-xs text-muted-foreground">{Math.round((session.progress / session.target) * 100)}%</span>
+                  )}
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[session.status]}`}>
+                    {statusLabels[session.status]}
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </motion.div>
+
       {/* Quest Solver Section */}
       {selectedToken && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-          className={cardClass + " p-5 self-start lg:col-span-1"}>
+          className={cardClass + " p-5 self-start lg:col-start-2 lg:row-start-1 lg:row-span-2"}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <img src={statusIcons.quest} alt="" className="w-5 h-5" />
@@ -631,47 +672,6 @@ export default function Dashboard() {
       )}
 
       </div>{/* End Main Grid */}
-
-      {/* Recent Sessions - Full Width */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-        className={cardClass + " p-5"}>
-        <h2 className="text-base font-semibold mb-3 flex items-center gap-2">
-          <img src={statusIcons.log} alt="" className="w-5 h-5" />
-          آخر الجلسات
-        </h2>
-        {recentSessions.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <img src={statusIcons.messages} alt="" className="w-12 h-12 mx-auto mb-3 opacity-20" />
-            <p>لا توجد جلسات بعد</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {recentSessions.map((session, i) => (
-              <motion.div key={session.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
-                className="flex items-center gap-4 p-3 rounded-2xl bg-secondary/20 hover:bg-secondary/30 transition-all border border-border/10">
-                {session.hero_image ? (
-                  <img src={session.hero_image} alt="" className="w-10 h-10 rounded-xl object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).src = statusIcons.quest; }} />
-                ) : (
-                  <img src={statusIcons.quest} alt="" className="w-10 h-10 rounded-xl" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground text-sm truncate">{session.quest_name || session.quest_id}</p>
-                  <p className="text-xs text-muted-foreground truncate">{session.game_title || "مهمة"}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {session.target > 0 && (
-                    <span className="text-xs text-muted-foreground">{Math.round((session.progress / session.target) * 100)}%</span>
-                  )}
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[session.status]}`}>
-                    {statusLabels[session.status]}
-                  </span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </motion.div>
     </div>
   );
 }
