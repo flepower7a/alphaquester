@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  Key, Search, Swords, Play, Square, RefreshCw,
-  CheckCircle, XCircle, Clock, Sparkles, Shield
+  Key, Search, Swords, Play, Square, RefreshCw, Pause,
+  CheckCircle, XCircle, Clock, Sparkles, Shield, RotateCcw
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -32,8 +32,41 @@ export default function QuestSolver() {
   const [loading, setLoading] = useState(false);
   const [quests, setQuests] = useState<QuestData[]>([]);
   const [selectedQuest, setSelectedQuest] = useState<QuestData | null>(null);
-  const [solving, setSolving] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionStatus, setSessionStatus] = useState<string>("idle");
   const [logs, setLogs] = useState<string[]>([]);
+
+  // Listen for real-time log updates
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const channel = supabase
+      .channel(`logs-${sessionId}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "quest_logs",
+        filter: `session_id=eq.${sessionId}`,
+      }, (payload: any) => {
+        setLogs((prev) => [...prev, payload.new.message]);
+      })
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "quest_sessions",
+        filter: `id=eq.${sessionId}`,
+      }, (payload: any) => {
+        setSessionStatus(payload.new.status);
+        if (payload.new.status === "completed") {
+          toast.success("✅ تم إكمال المهمة بنجاح!");
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sessionId]);
 
   const fetchQuests = async () => {
     if (!token.trim()) {
@@ -64,7 +97,7 @@ export default function QuestSolver() {
 
   const startSolving = async () => {
     if (!selectedQuest || !user) return;
-    setSolving(true);
+    setSessionStatus("running");
     setLogs(["⏳ جاري بدء حل المهمة..."]);
 
     try {
@@ -76,27 +109,42 @@ export default function QuestSolver() {
         },
       });
       if (error) throw error;
+      if (data?.session?.id) {
+        setSessionId(data.session.id);
+      }
       setLogs((prev) => [...prev, "✅ تم بدء حل المهمة بنجاح"]);
       toast.success("تم بدء حل المهمة!");
     } catch (err: any) {
       setLogs((prev) => [...prev, `❌ خطأ: ${err.message}`]);
       toast.error(err.message || "خطأ في بدء المهمة");
-      setSolving(false);
+      setSessionStatus("idle");
     }
   };
 
-  const stopSolving = () => {
-    setSolving(false);
-    setLogs((prev) => [...prev, "⏹️ تم إيقاف حل المهمة"]);
-    toast.info("تم إيقاف حل المهمة");
+  const controlQuest = async (action: "pause" | "resume" | "stop") => {
+    if (!sessionId) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("pause-quest", {
+        body: { sessionId, action },
+      });
+      if (error) throw error;
+      setSessionStatus(data.status);
+      setLogs((prev) => [...prev, data.message]);
+      toast.success(data.message);
+      if (action === "stop") {
+        setSessionId(null);
+        setSessionStatus("idle");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "خطأ في التحكم بالمهمة");
+    }
   };
+
+  const isActive = sessionStatus === "running" || sessionStatus === "paused";
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-bold flex items-center gap-3">
           <div className="p-2.5 rounded-2xl bg-primary/20 glow-sm">
             <Swords className="w-6 h-6 text-primary" />
@@ -126,12 +174,12 @@ export default function QuestSolver() {
               onChange={(e) => setToken(e.target.value)}
               placeholder="أدخل توكن Discord الخاص بك"
               className="pl-10 h-12 rounded-2xl bg-secondary/50 border-border/50"
-              disabled={solving}
+              disabled={isActive}
             />
           </div>
           <Button
             onClick={fetchQuests}
-            disabled={loading || solving}
+            disabled={loading || isActive}
             className="h-12 px-6 rounded-2xl bg-primary hover:bg-primary/90 glow-sm"
           >
             {loading ? (
@@ -165,18 +213,14 @@ export default function QuestSolver() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: i * 0.1 }}
-                onClick={() => !solving && setSelectedQuest(quest)}
+                onClick={() => !isActive && setSelectedQuest(quest)}
                 className={`glass rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 hover:glow-sm ${
                   selectedQuest?.id === quest.id ? "ring-2 ring-primary glow-primary" : ""
                 }`}
               >
                 {quest.hero_image && (
                   <div className="h-32 overflow-hidden">
-                    <img
-                      src={quest.hero_image}
-                      alt={quest.name}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={quest.hero_image} alt={quest.name} className="w-full h-full object-cover" />
                   </div>
                 )}
                 <div className="p-5">
@@ -234,9 +278,16 @@ export default function QuestSolver() {
             <div>
               <h3 className="font-semibold text-foreground">{selectedQuest.name}</h3>
               <p className="text-sm text-muted-foreground">{selectedQuest.game_title}</p>
+              {isActive && (
+                <span className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-medium ${
+                  sessionStatus === "running" ? "bg-success/20 text-success" : "bg-warning/20 text-warning"
+                }`}>
+                  {sessionStatus === "running" ? "قيد التشغيل" : "متوقف مؤقتاً"}
+                </span>
+              )}
             </div>
-            <div className="flex gap-3">
-              {!solving ? (
+            <div className="flex gap-2">
+              {sessionStatus === "idle" && (
                 <Button
                   onClick={startSolving}
                   disabled={!selectedQuest.supported || selectedQuest.completed}
@@ -245,15 +296,44 @@ export default function QuestSolver() {
                   <Play className="w-4 h-4 mr-2" />
                   بدء الحل
                 </Button>
-              ) : (
-                <Button
-                  onClick={stopSolving}
-                  variant="destructive"
-                  className="rounded-2xl"
-                >
-                  <Square className="w-4 h-4 mr-2" />
-                  إيقاف
-                </Button>
+              )}
+              {sessionStatus === "running" && (
+                <>
+                  <Button
+                    onClick={() => controlQuest("pause")}
+                    className="rounded-2xl bg-warning hover:bg-warning/90 text-warning-foreground"
+                  >
+                    <Pause className="w-4 h-4 mr-2" />
+                    إيقاف مؤقت
+                  </Button>
+                  <Button
+                    onClick={() => controlQuest("stop")}
+                    variant="destructive"
+                    className="rounded-2xl"
+                  >
+                    <Square className="w-4 h-4 mr-2" />
+                    إيقاف نهائي
+                  </Button>
+                </>
+              )}
+              {sessionStatus === "paused" && (
+                <>
+                  <Button
+                    onClick={() => controlQuest("resume")}
+                    className="rounded-2xl bg-success hover:bg-success/90 text-success-foreground glow-sm"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    استئناف
+                  </Button>
+                  <Button
+                    onClick={() => controlQuest("stop")}
+                    variant="destructive"
+                    className="rounded-2xl"
+                  >
+                    <Square className="w-4 h-4 mr-2" />
+                    إيقاف نهائي
+                  </Button>
+                </>
               )}
             </div>
           </div>

@@ -36,7 +36,8 @@ export default function Auth() {
           },
         });
         if (error) throw error;
-        toast.success("تم إنشاء الحساب! تحقق من بريدك الإلكتروني للتأكيد.");
+        toast.success("تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول الآن.");
+        navigate("/dashboard");
       }
     } catch (error: any) {
       toast.error(error.message);
@@ -46,7 +47,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden" style={{ fontFamily: "'Cairo', sans-serif" }}>
       {/* Background effects */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse-glow" />

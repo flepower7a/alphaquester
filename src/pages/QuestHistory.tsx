@@ -30,6 +30,7 @@ export default function QuestHistory() {
     { value: "all", label: "الكل" },
     { value: "completed", label: "مكتمل" },
     { value: "running", label: "نشط" },
+    { value: "paused", label: "متوقف مؤقتاً" },
     { value: "failed", label: "فشل" },
     { value: "stopped", label: "متوقف" },
   ];
@@ -39,6 +40,7 @@ export default function QuestHistory() {
     running: "bg-warning/20 text-warning",
     failed: "bg-destructive/20 text-destructive",
     stopped: "bg-muted text-muted-foreground",
+    paused: "bg-accent/20 text-accent",
     pending: "bg-secondary text-secondary-foreground",
   };
 
@@ -47,6 +49,7 @@ export default function QuestHistory() {
     running: "قيد التشغيل",
     failed: "فشل",
     stopped: "متوقف",
+    paused: "متوقف مؤقتاً",
     pending: "معلق",
   };
 

@@ -3,21 +3,76 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Alpha Quester - حل مهمات Discord تلقائياً</title>
-    <meta name="description" content="Alpha Quester - أسرع وأسهل طريقة لحل مهمات Discord تلقائياً بأمان وفعالية عالية" />
+    <title>Alpha Quester - الفا كويستر | حل مهمات Discord تلقائياً</title>
+    <meta name="description" content="Alpha Quester - أسرع وأسهل طريقة لحل مهمات Discord تلقائياً بأمان وفعالية عالية. ابدأ مجاناً الآن!" />
     <meta name="author" content="Alpha Quester" />
+    <meta name="keywords" content="Discord, Quests, حل مهمات, ديسكورد, Alpha Quester, الفا كويستر, bot, تلقائي" />
+    <link rel="canonical" href="https://dcq.lovable.app" />
 
-    <meta property="og:title" content="Alpha Quester" />
-    <meta property="og:description" content="حل مهمات Discord تلقائياً بنقرة واحدة" />
+    <meta property="og:title" content="Alpha Quester - الفا كويستر" />
+    <meta property="og:description" content="حل مهمات Discord تلقائياً بنقرة واحدة. آمن، سريع، ومجاني!" />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:url" content="https://dcq.lovable.app" />
+    <meta property="og:image" content="https://dcq.lovable.app/og-image.png" />
+    <meta property="og:locale" content="ar_SA" />
+    <meta property="og:site_name" content="Alpha Quester" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:title" content="Alpha Quester - الفا كويستر" />
+    <meta name="twitter:description" content="حل مهمات Discord تلقائياً بنقرة واحدة. آمن، سريع، ومجاني!" />
+    <meta name="twitter:image" content="https://dcq.lovable.app/og-image.png" />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Alpha Quester",
+      "alternateName": "الفا كويستر",
+      "url": "https://dcq.lovable.app",
+      "description": "حل مهمات Discord تلقائياً بأمان وسرعة عالية",
+      "applicationCategory": "UtilityApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
+
+    <style>
+      #lovable-badge, [id="lovable-badge"], a[href*="lovable.dev"][id] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        position: absolute !important;
+        left: -9999px !important;
+      }
+    </style>
   </head>
 
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var badge = document.getElementById('lovable-badge');
+        if (badge) badge.remove();
+        var observer = new MutationObserver(function(mutations) {
+          mutations.forEach(function(m) {
+            m.addedNodes.forEach(function(node) {
+              if (node.id === 'lovable-badge' || (node.querySelector && node.querySelector('#lovable-badge'))) {
+                node.remove();
+              }
+            });
+          });
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+      });
+    </script>
   </body>
 </html>
