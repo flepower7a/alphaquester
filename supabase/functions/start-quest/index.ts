@@ -8,6 +8,32 @@ const corsHeaders = {
 
 const DISCORD_API = "https://discord.com/api/v9";
 
+function generateSuperProperties(): string {
+  const superProperties = {
+    os: "Windows", browser: "Chrome", device: "", system_locale: "en",
+    has_client_mods: false,
+    browser_user_agent: "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/1.0.9044 Chrome/120.0.6099.291 Electron/28.2.10 Safari/537.36",
+    browser_version: "142.0.0.0", os_version: "10", referrer: "", referring_domain: "",
+    referrer_current: "https://discord.com/", referring_domain_current: "discord.com",
+    release_channel: "stable", client_build_number: 971383, client_event_source: null,
+  };
+  return btoa(JSON.stringify(superProperties));
+}
+
+function getDiscordHeaders(token: string): Record<string, string> {
+  return {
+    accept: "*/*", "accept-language": "en,en-US;q=0.9,ar;q=0.8",
+    authorization: token.trim(), priority: "u=1, i",
+    "sec-ch-ua": '"Chromium";v="142", "Google Chrome";v="142", "Not_A Brand";v="99"',
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/1.0.9044 Chrome/120.0.6099.291 Electron/28.2.10 Safari/537.36",
+    "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": '"Windows"',
+    "sec-fetch-dest": "empty", "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
+    "x-discord-locale": "en-US", "x-super-properties": generateSuperProperties(),
+    "x-debug-options": "bugReporterEnabled", "content-type": "application/json",
+    origin: "https://discord.com", referer: "https://discord.com/quest-home",
+    "x-discord-timezone": "Africa/Algiers",
+  };
+}
 const PROXIES = [
   "http://20.54.56.26:8080",
   "http://113.50.66.19:9091",
@@ -102,7 +128,7 @@ serve(async (req) => {
 
     // Fetch quest details
     const questsRes = await proxyFetch(`${DISCORD_API}/quests/@me`, {
-      headers: { Authorization: discordToken, "Content-Type": "application/json" },
+      headers: getDiscordHeaders(discordToken),
     });
 
     if (!questsRes.ok) {
@@ -219,10 +245,7 @@ async function solveQuest(
 
       const res = await proxyFetch(endpoint, {
         method: "POST",
-        headers: {
-          Authorization: discordToken,
-          "Content-Type": "application/json",
-        },
+        headers: getDiscordHeaders(discordToken),
         body: JSON.stringify(body),
       });
 
