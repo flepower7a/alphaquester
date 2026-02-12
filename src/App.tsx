@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/lib/auth";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Verification from "./pages/Verification";
+import AdminCodes from "./pages/AdminCodes";
 import Dashboard from "./pages/Dashboard";
 import QuestSolver from "./pages/QuestSolver";
 import QuestHistory from "./pages/QuestHistory";
@@ -18,6 +19,23 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient();
+
+const ADMIN_EMAILS = ["sf1@sf1.sf1", "uwu@alpha.dcq"];
+
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-foreground/20 border-t-foreground rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (!user || !ADMIN_EMAILS.includes(user.email || "")) {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+}
 
 function PremiumRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -84,6 +102,7 @@ const App = () => (
             <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
             <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
             <Route path="/verification" element={<ProtectedRoute><Verification /></ProtectedRoute>} />
+            <Route path="/admin/codes" element={<AdminRoute><AdminCodes /></AdminRoute>} />
             <Route path="/dashboard" element={<PremiumRoute><DashboardLayout><Dashboard /></DashboardLayout></PremiumRoute>} />
             <Route path="/dashboard/solver" element={<PremiumRoute><DashboardLayout><QuestSolver /></DashboardLayout></PremiumRoute>} />
             <Route path="/dashboard/history" element={<PremiumRoute><DashboardLayout><QuestHistory /></DashboardLayout></PremiumRoute>} />
