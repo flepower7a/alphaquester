@@ -50,15 +50,15 @@ export default function AdminCodes() {
 
   const fetchCodes = useCallback(async () => {
     setLoading(true);
-    const res = await supabase.functions.invoke("admin-codes", {
-      method: "GET",
-      body: undefined,
-      headers: { "Content-Type": "application/json" },
-    });
-    // Edge functions via invoke always use POST, let's use query params
-    const res2 = await supabase.functions.invoke("admin-codes?action=list");
-    if (res2.data?.codes) {
-      setCodes(res2.data.codes);
+    try {
+      const res = await supabase.functions.invoke("admin-codes", {
+        body: { action: "list" },
+      });
+      if (res.data?.codes) {
+        setCodes(res.data.codes);
+      }
+    } catch {
+      toast.error("خطأ في جلب الأكواد");
     }
     setLoading(false);
   }, []);
@@ -70,8 +70,8 @@ export default function AdminCodes() {
   const generateCode = async () => {
     setGenerating(true);
     try {
-      const res = await supabase.functions.invoke("admin-codes?action=generate", {
-        body: { duration_days: selectedDuration.days },
+      const res = await supabase.functions.invoke("admin-codes", {
+        body: { action: "generate", duration_days: selectedDuration.days },
       });
       if (res.data?.code) {
         setCodes((prev) => [res.data.code, ...prev]);
@@ -88,8 +88,8 @@ export default function AdminCodes() {
   const deleteCode = async (id: string) => {
     setDeleting(id);
     try {
-      const res = await supabase.functions.invoke("admin-codes?action=delete", {
-        body: { code_id: id },
+      const res = await supabase.functions.invoke("admin-codes", {
+        body: { action: "delete", code_id: id },
       });
       if (res.data?.success) {
         setCodes((prev) => prev.filter((c) => c.id !== id));
@@ -104,8 +104,8 @@ export default function AdminCodes() {
   const checkExpired = async () => {
     setCheckingExpired(true);
     try {
-      const res = await supabase.functions.invoke("admin-codes?action=check-expired", {
-        body: {},
+      const res = await supabase.functions.invoke("admin-codes", {
+        body: { action: "check-expired" },
       });
       if (res.data) {
         toast.success(`تم إلغاء ${res.data.revoked} اشتراك منتهي`);

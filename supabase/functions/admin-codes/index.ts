@@ -50,11 +50,12 @@ Deno.serve(async (req) => {
       });
     }
 
+    const body = await req.json().catch(() => ({}));
     const url = new URL(req.url);
-    const action = url.searchParams.get("action");
+    const action = url.searchParams.get("action") || body.action;
 
-    // GET - List all codes
-    if (req.method === "GET" && action === "list") {
+    // List all codes
+    if (action === "list") {
       const { data, error } = await supabaseAdmin
         .from("subscription_codes")
         .select("*")
@@ -67,9 +68,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // POST - Generate new code
-    if (req.method === "POST" && action === "generate") {
-      const { duration_days } = await req.json();
+    // Generate new code
+    if (action === "generate") {
+      const { duration_days } = body;
       const code = generateCode();
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + (duration_days || 30));
@@ -90,9 +91,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // DELETE - Delete a code
-    if (req.method === "POST" && action === "delete") {
-      const { code_id } = await req.json();
+    // Delete a code
+    if (action === "delete") {
+      const { code_id } = body;
 
       // If the code was used, revert the user to free
       const { data: codeData } = await supabaseAdmin
@@ -120,8 +121,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // POST - Check & revoke expired codes
-    if (req.method === "POST" && action === "check-expired") {
+    // Check & revoke expired codes
+    if (action === "check-expired") {
       const { data: expiredCodes } = await supabaseAdmin
         .from("subscription_codes")
         .select("*")
