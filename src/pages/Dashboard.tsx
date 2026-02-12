@@ -66,6 +66,7 @@ export default function Dashboard() {
   const [sessionStatus, setSessionStatus] = useState<string>("idle");
   const [logs, setLogs] = useState<string[]>([]);
   const [completedQuestIds, setCompletedQuestIds] = useState<Set<string>>(new Set());
+  const [liveProgress, setLiveProgress] = useState<{ progress: number; target: number } | null>(null);
 
   const [stats, setStats] = useState<SessionStats>({ totalSessions: 0, completedSessions: 0, runningSessions: 0, totalSolved: 0 });
   const [recentSessions, setRecentSessions] = useState<any[]>([]);
@@ -216,7 +217,20 @@ export default function Dashboard() {
         if (error) throw error;
 
         if (data?.progress !== undefined) {
+          setLiveProgress({ progress: data.progress, target: data.target });
           setLogs(prev => [...prev, `📊 التقدم: ${data.progress}/${data.target}`]);
+          // Update quest tasks in real-time
+          setQuests(prev => prev.map(q => {
+            if (q.id !== selectedQuest?.id) return q;
+            return {
+              ...q,
+              tasks: q.tasks.map(t => ({
+                ...t,
+                current: data.progress,
+                percent: data.target > 0 ? Math.round((data.progress / data.target) * 100) : t.percent,
+              })),
+            };
+          }));
         }
 
         if (data?.done) {
