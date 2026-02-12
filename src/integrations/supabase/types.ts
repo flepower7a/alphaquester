@@ -14,7 +14,169 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      discord_tokens: {
+        Row: {
+          created_at: string
+          discord_user_id: string | null
+          discord_username: string | null
+          id: string
+          is_active: boolean | null
+          last_used_at: string | null
+          token_hash: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          discord_user_id?: string | null
+          discord_username?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          token_hash: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          discord_user_id?: string | null
+          discord_username?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          token_hash?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          language: string | null
+          total_solved_quests: number | null
+          updated_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          language?: string | null
+          total_solved_quests?: number | null
+          updated_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          language?: string | null
+          total_solved_quests?: number | null
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      quest_logs: {
+        Row: {
+          created_at: string
+          id: string
+          level: string | null
+          message: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level?: string | null
+          message: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: string | null
+          message?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "quest_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quest_sessions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          game_title: string | null
+          hero_image: string | null
+          id: string
+          method: string | null
+          progress: number | null
+          quest_id: string
+          quest_name: string | null
+          reward_name: string | null
+          started_at: string | null
+          status: string | null
+          target: number | null
+          token_id: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          game_title?: string | null
+          hero_image?: string | null
+          id?: string
+          method?: string | null
+          progress?: number | null
+          quest_id: string
+          quest_name?: string | null
+          reward_name?: string | null
+          started_at?: string | null
+          status?: string | null
+          target?: number | null
+          token_id?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          game_title?: string | null
+          hero_image?: string | null
+          id?: string
+          method?: string | null
+          progress?: number | null
+          quest_id?: string
+          quest_name?: string | null
+          reward_name?: string | null
+          started_at?: string | null
+          status?: string | null
+          target?: number | null
+          token_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_sessions_token_id_fkey"
+            columns: ["token_id"]
+            isOneToOne: false
+            referencedRelation: "discord_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
