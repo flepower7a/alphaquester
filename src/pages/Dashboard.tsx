@@ -49,7 +49,7 @@ interface SessionStats {
   totalSolved: number;
 }
 
-const cardClass = "rounded-3xl bg-card/80 border border-border/30 backdrop-blur-xl glow-white-sm card-hover";
+const cardClass = "rounded-3xl bg-card/80 border border-foreground/[0.06] backdrop-blur-2xl glow-white-sm card-hover";
 
 export default function Dashboard() {
   const { user } = useAuth();
