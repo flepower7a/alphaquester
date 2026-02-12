@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Space Grotesk', 'Cairo', 'sans-serif'],
-        display: ['Space Grotesk', 'sans-serif'],
+        sans: ['Cairo', 'sans-serif'],
+        display: ['Cairo', 'sans-serif'],
         arabic: ['Cairo', 'sans-serif'],
       },
       colors: {
