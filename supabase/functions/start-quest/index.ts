@@ -61,13 +61,29 @@ serve(async (req) => {
       });
     }
 
-    const { token: discordToken, questId, method } = await req.json();
+    const { tokenId, questId, method } = await req.json();
 
-    if (!discordToken || !questId || !method) {
+    if (!tokenId || !questId || !method) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Fetch token server-side only
+    const { data: tokenRecord } = await supabase
+      .from("discord_tokens")
+      .select("encrypted_token")
+      .eq("id", tokenId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!tokenRecord?.encrypted_token) {
+      return new Response(JSON.stringify({ error: "Token not found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const discordToken = tokenRecord.encrypted_token;
 
     // Fetch quest details from Discord
     const questsRes = await fetch(`${DISCORD_API}/quests/@me`, {
@@ -94,11 +110,12 @@ serve(async (req) => {
     const target = task?.target || 0;
     const progress = quest.user_status?.progress?.[method]?.value || 0;
 
-    // Create session - just save it and return immediately
+    // Create session with token_id reference (not the actual token)
     const { data: session, error: sessionError } = await supabase
       .from("quest_sessions")
       .insert({
         user_id: user.id,
+        token_id: tokenId,
         quest_id: questId,
         quest_name: config?.messages?.quest_name,
         game_title: config?.messages?.game_title,

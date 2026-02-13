@@ -19,7 +19,9 @@ export default function SettingsPage() {
     if (!user) return;
     supabase.from("profiles").select("*").eq("user_id", user.id).single()
       .then(({ data }) => { if (data) { setUsername(data.username || ""); setLanguage(data.language || "ar"); } });
-    supabase.from("discord_tokens").select("*").eq("user_id", user.id)
+    supabase.from("discord_tokens")
+      .select("id, discord_user_id, discord_username, display_name, avatar_url, is_active")
+      .eq("user_id", user.id)
       .then(({ data }) => { if (data) setTokens(data); });
   }, [user]);
 

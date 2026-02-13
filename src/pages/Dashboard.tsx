@@ -78,7 +78,9 @@ export default function Dashboard() {
   }, [user]);
 
   const loadTokens = async () => {
-    const { data } = await supabase.from("discord_tokens").select("*").eq("user_id", user!.id).eq("is_active", true);
+    const { data } = await supabase.from("discord_tokens")
+      .select("id, discord_user_id, discord_username, display_name, avatar_url, boost_months, nitro_type, is_active")
+      .eq("user_id", user!.id).eq("is_active", true);
     if (data) {
       setTokens(data as TokenRecord[]);
       if (data.length > 0 && !selectedToken) setSelectedToken(data[0] as TokenRecord);
@@ -135,21 +137,11 @@ export default function Dashboard() {
     } catch { toast.error("خطأ في حذف التوكن"); }
   };
 
-  const getStoredToken = async (tokenId: string): Promise<string | null> => {
-    try {
-      const { data, error } = await supabase.functions.invoke("discord-user-info", { body: { action: "get_token", tokenId } });
-      if (error) throw error;
-      return data?.token || null;
-    } catch { return null; }
-  };
-
   const fetchQuests = async () => {
     if (!selectedToken) return toast.error("اختر توكن أولاً");
     setLoadingQuests(true);
     try {
-      const token = await getStoredToken(selectedToken.id);
-      if (!token) return toast.error("لم يتم العثور على التوكن");
-      const { data, error } = await supabase.functions.invoke("fetch-quests", { body: { token } });
+      const { data, error } = await supabase.functions.invoke("fetch-quests", { body: { tokenId: selectedToken.id } });
       if (error) throw error;
       if (data?.quests) {
         setQuests(data.quests);
@@ -180,7 +172,6 @@ export default function Dashboard() {
   }, [sessionId]);
 
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const storedTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
     return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
@@ -208,9 +199,7 @@ export default function Dashboard() {
 
     pollingRef.current = setInterval(async () => {
       try {
-        const token = storedTokenRef.current;
-        if (!token) return;
-        const { data, error } = await supabase.functions.invoke("quest-heartbeat", { body: { sessionId: sid, token } });
+        const { data, error } = await supabase.functions.invoke("quest-heartbeat", { body: { sessionId: sid } });
         if (error) throw error;
 
         if (data?.progress !== undefined) {
@@ -246,10 +235,7 @@ export default function Dashboard() {
     setSessionStatus("running");
     setLogs(["⏳ جاري بدء حل المهمة..."]);
     try {
-      const token = await getStoredToken(selectedToken.id);
-      if (!token) { setSessionStatus("idle"); return toast.error("لم يتم العثور على التوكن"); }
-      storedTokenRef.current = token;
-      const { data, error } = await supabase.functions.invoke("start-quest", { body: { token, questId: selectedQuest.id, method: selectedQuest.method } });
+      const { data, error } = await supabase.functions.invoke("start-quest", { body: { tokenId: selectedToken.id, questId: selectedQuest.id, method: selectedQuest.method } });
       if (error) throw error;
       if (data?.session?.id) {
         setSessionId(data.session.id);
