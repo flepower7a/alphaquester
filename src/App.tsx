@@ -14,6 +14,7 @@ import BadgesPage from "./pages/BadgesPage";
 import QuestHistory from "./pages/QuestHistory";
 import StatsPage from "./pages/StatsPage";
 import SettingsPage from "./pages/SettingsPage";
+import UpdateMePage from "./pages/UpdateMePage";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import NotFound from "./pages/NotFound";
 import { useEffect, useState } from "react";
@@ -110,6 +111,7 @@ const App = () => (
             <Route path="/dashboard/history" element={<PremiumRoute><DashboardLayout><QuestHistory /></DashboardLayout></PremiumRoute>} />
             <Route path="/dashboard/stats" element={<PremiumRoute><DashboardLayout><StatsPage /></DashboardLayout></PremiumRoute>} />
             <Route path="/dashboard/settings" element={<PremiumRoute><DashboardLayout><SettingsPage /></DashboardLayout></PremiumRoute>} />
+            <Route path="/dashboard/update/me" element={<PremiumRoute><DashboardLayout><UpdateMePage /></DashboardLayout></PremiumRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

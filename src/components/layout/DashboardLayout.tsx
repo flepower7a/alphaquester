@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth";
 import {
   Zap, LayoutDashboard, History, Settings,
-  LogOut, Menu, X, User, BarChart3, Award
+  LogOut, Menu, X, User, BarChart3, Award, Bell
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +13,7 @@ const navItems = [
   { path: "/dashboard/badges", label: "الشارات", icon: Award, customIcon: "/emojis/boost_level_9.png" },
   { path: "/dashboard/history", label: "السجل", icon: History },
   { path: "/dashboard/stats", label: "الإحصائيات", icon: BarChart3 },
+  { path: "/dashboard/update/me", label: "Update Me", icon: Bell },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {

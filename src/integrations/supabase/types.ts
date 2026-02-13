@@ -236,6 +236,39 @@ export type Database = {
           },
         ]
       }
+      webhook_settings: {
+        Row: {
+          avatar_path: string | null
+          created_at: string
+          id: string
+          is_enabled: boolean | null
+          updated_at: string
+          user_id: string
+          webhook_name: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          avatar_path?: string | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean | null
+          updated_at?: string
+          user_id: string
+          webhook_name?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          avatar_path?: string | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean | null
+          updated_at?: string
+          user_id?: string
+          webhook_name?: string | null
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

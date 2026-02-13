@@ -2,3 +2,9 @@ project_id = "rqbzfncczbveunxtxbfr"
 
 [functions.discord-user-info]
 verify_jwt = false
+
+[functions.webhook-settings]
+verify_jwt = false
+
+[functions.webhook-notify]
+verify_jwt = false
