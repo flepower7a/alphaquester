@@ -55,14 +55,14 @@ function BadgeProgress({
   const maxMonths = levels[levels.length - 1].months;
   const progressPercent = maxMonths > 0 ? Math.min((currentMonths / maxMonths) * 100, 100) : 0;
 
-  // Display levels from highest (left) to lowest (right) for RTL layout
-  const reversedLevels = [...levels].reverse();
+  // Display levels from lowest (left) to highest (right)
+  const displayLevels = [...levels];
 
   return (
     <div className="mt-6">
       {/* Icons row - highest on left, lowest on right */}
       <div className="flex items-end justify-between mb-2 px-1">
-        {reversedLevels.map((lvl, i) => {
+        {displayLevels.map((lvl, i) => {
           const isReached = currentMonths >= lvl.months;
           return (
             <div key={i} className="flex flex-col items-center gap-1">
