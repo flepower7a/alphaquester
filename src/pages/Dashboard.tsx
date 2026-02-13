@@ -162,7 +162,6 @@ export default function Dashboard() {
     }
   };
 
-  // Realtime logs
   useEffect(() => {
     if (!sessionId) return;
     const channel = supabase
@@ -280,96 +279,78 @@ export default function Dashboard() {
   const isQuestCompleted = (questId: string) => completedQuestIds.has(questId);
 
   const statusColors: Record<string, string> = {
-    completed: "bg-success/15 text-success border border-success/20",
-    running: "bg-primary/15 text-primary border border-primary/20",
-    failed: "bg-destructive/15 text-destructive border border-destructive/20",
-    stopped: "bg-muted/50 text-muted-foreground border border-border/30",
-    paused: "bg-warning/15 text-warning border border-warning/20",
-    pending: "bg-secondary text-secondary-foreground border border-border/30",
+    completed: "bg-success/10 text-success",
+    running: "bg-primary/10 text-primary",
+    failed: "bg-destructive/10 text-destructive",
+    stopped: "bg-muted text-muted-foreground",
+    paused: "bg-warning/10 text-warning",
+    pending: "bg-muted text-muted-foreground",
   };
   const statusLabels: Record<string, string> = {
-    completed: "مكتمل", running: "قيد التشغيل", failed: "فشل",
-    stopped: "متوقف", paused: "متوقف مؤقتاً", pending: "معلق",
+    completed: "مكتمل", running: "نشط", failed: "فشل",
+    stopped: "متوقف", paused: "موقف", pending: "معلق",
   };
 
-  const statItems = [
-    { icon: Swords, label: "إجمالي الجلسات", value: stats.totalSessions, color: "from-primary to-accent" },
-    { icon: Trophy, label: "المهمات المكتملة", value: stats.completedSessions, color: "from-success to-[hsl(160_84%_30%)]" },
-    { icon: Activity, label: "جلسات نشطة", value: stats.runningSessions, color: "from-warning to-[hsl(38_92%_40%)]" },
-    { icon: TrendingUp, label: "إجمالي الحلول", value: stats.totalSolved, color: "from-accent to-primary" },
-  ];
-
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
-          <motion.div className="p-2.5 rounded-xl bg-gradient-primary glow-primary" whileHover={{ scale: 1.05 }}>
-            <Zap className="w-6 h-6 text-white" />
-          </motion.div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">مرحباً، {user?.email?.split("@")[0]} 👋</h1>
-            <p className="text-muted-foreground text-xs">إليك ملخص نشاطك ولوحة التحكم</p>
-          </div>
+    <div className="space-y-4">
+      {/* Greeting + Stats — Bento Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        {/* Welcome card — spans 2 on mobile, 1 on desktop */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          className="col-span-2 lg:col-span-1 rounded-2xl bg-gradient-to-br from-primary/8 to-accent/4 border border-border/20 p-4 flex flex-col justify-center">
+          <p className="text-xs text-muted-foreground mb-0.5">مرحباً 👋</p>
+          <p className="text-sm font-bold text-foreground truncate">{user?.email?.split("@")[0]}</p>
         </motion.div>
-      </div>
-
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-        {statItems.map((s, i) => (
-          <motion.div key={s.label} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className="card-modern rounded-2xl p-4 group">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[11px] text-muted-foreground mb-0.5">{s.label}</p>
-                <p className="text-2xl font-bold text-foreground">{s.value}</p>
-              </div>
-              <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${s.color} flex items-center justify-center opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300`}>
-                <s.icon className="w-4 h-4 text-white" />
-              </div>
+        {[
+          { icon: Swords, label: "جلسات", value: stats.totalSessions },
+          { icon: Trophy, label: "مكتملة", value: stats.completedSessions },
+          { icon: Activity, label: "نشطة", value: stats.runningSessions },
+          { icon: TrendingUp, label: "إجمالي", value: stats.totalSolved },
+        ].map((s, i) => (
+          <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * (i + 1) }}
+            className="rounded-2xl bg-card/50 border border-border/20 p-4">
+            <div className="flex items-center justify-between mb-1">
+              <s.icon className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-lg font-black text-foreground">{s.value}</span>
             </div>
+            <p className="text-[10px] text-muted-foreground font-medium">{s.label}</p>
           </motion.div>
         ))}
       </div>
 
-      {/* Floating Add Token Modal */}
+      {/* Add Token Modal */}
       <AnimatePresence>
         {showAddModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-md p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
             onClick={() => setShowAddModal(false)}>
-            <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
+            <motion.div initial={{ scale: 0.95, opacity: 0, y: 15 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 15 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="card-modern rounded-2xl p-8 max-w-md w-full gradient-border" onClick={e => e.stopPropagation()}>
-              <div className="text-center mb-6">
-                <div className="w-14 h-14 rounded-xl bg-gradient-accent flex items-center justify-center mx-auto mb-3 glow-accent">
-                  <img src={statusIcons.discord} alt="" className="w-8 h-8" />
+              className="rounded-2xl bg-card border border-border/30 p-7 max-w-md w-full" onClick={e => e.stopPropagation()}>
+              <div className="text-center mb-5">
+                <div className="w-12 h-12 rounded-xl bg-gradient-accent flex items-center justify-center mx-auto mb-3">
+                  <img src={statusIcons.discord} alt="" className="w-7 h-7" />
                 </div>
-                <h2 className="text-xl font-bold text-foreground">إضافة توكن Discord</h2>
-                <p className="text-sm text-muted-foreground mt-2">أدخل التوكن وسيتم حفظه بشكل آمن</p>
+                <h2 className="text-lg font-bold text-foreground">إضافة توكن Discord</h2>
+                <p className="text-xs text-muted-foreground mt-1">سيتم حفظه بشكل مشفر وآمن</p>
               </div>
 
-              <div className="rounded-xl bg-warning/5 border border-warning/20 p-4 mb-5">
-                <p className="text-sm text-warning font-medium flex items-center gap-2">
-                  <Shield className="w-4 h-4 shrink-0" />⚠️ تنبيه مهم
-                </p>
-                <p className="text-xs text-warning/70 mt-1 leading-relaxed">
-                  استخدم توكن حساب وهمي (Alt Account) وليس حسابك الأساسي تجنباً لأي مشاكل.
+              <div className="rounded-xl bg-warning/5 border border-warning/15 p-3 mb-4">
+                <p className="text-xs text-warning font-medium flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 shrink-0" />⚠️ استخدم حساب وهمي (Alt Account)
                 </p>
               </div>
 
               <div className="relative mb-4">
-                <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
                 <Input type="password" value={newToken} onChange={e => setNewToken(e.target.value)}
-                  placeholder="أدخل توكن Discord هنا" className="pl-10 h-12 rounded-xl bg-secondary/50 border-primary/[0.1] text-base" />
+                  placeholder="أدخل توكن Discord" className="pl-10 h-11 rounded-xl bg-background/50 border-border/40 text-sm" />
               </div>
 
-              <div className="flex gap-3">
-                <Button onClick={() => setShowAddModal(false)} variant="ghost" className="flex-1 h-12 rounded-xl border border-primary/[0.1]">
-                  إلغاء
-                </Button>
-                <Button onClick={addToken} disabled={addingToken} className="flex-1 h-12 rounded-xl bg-gradient-primary text-white hover:opacity-90 glow-sm">
-                  {addingToken ? <RefreshCw className="w-4 h-4 animate-spin" /> : <>حفظ التوكن</>}
+              <div className="flex gap-2">
+                <Button onClick={() => setShowAddModal(false)} variant="ghost" className="flex-1 h-10 rounded-xl border border-border/30 text-xs">إلغاء</Button>
+                <Button onClick={addToken} disabled={addingToken} className="flex-1 h-10 rounded-xl bg-gradient-primary text-white text-xs hover:opacity-90">
+                  {addingToken ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : "حفظ"}
                 </Button>
               </div>
             </motion.div>
@@ -377,297 +358,271 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-      {/* Main Layout: Two columns */}
-      <div className="flex flex-col lg:flex-row gap-4">
+      {/* Main Bento Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-      {/* Left Column: Tokens + Recent Sessions */}
-      <div className="flex flex-col gap-4 lg:w-1/2 lg:min-w-0">
-
-      {/* Token Management */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-        className="card-modern rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <img src={statusIcons.discord} alt="" className="w-5 h-5" />
-            التوكنات المحفوظة
-          </h2>
-          <Button onClick={() => setShowAddModal(true)} size="sm" className="rounded-xl bg-gradient-primary text-white hover:opacity-90 text-xs">
-            <Plus className="w-4 h-4 ml-1" />إضافة توكن
-          </Button>
-        </div>
-
-        {tokens.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <img src={statusIcons.customer} alt="" className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p>لا توجد توكنات محفوظة</p>
-            <p className="text-sm">أضف توكن Discord للبدء</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {tokens.map((t, i) => {
-              const boostLevel = getBoostLevel(t.boost_months || 0);
-              const isSelected = selectedToken?.id === t.id;
-              return (
-                <motion.div key={t.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
-                  onClick={() => setSelectedToken(t)}
-                  className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all duration-300 ${isSelected ? "bg-primary/10 ring-1 ring-primary/30 glow-sm" : "bg-secondary/30 hover:bg-secondary/50 border border-primary/[0.05]"}`}>
-                  <div className="relative">
-                    {t.avatar_url ? (
-                      <img src={t.avatar_url} alt="" className="w-12 h-12 rounded-xl object-cover" />
-                    ) : (
-                      <div className="w-12 h-12 rounded-xl bg-gradient-accent flex items-center justify-center">
-                        <User className="w-5 h-5 text-white" />
-                      </div>
-                    )}
-                    {(t.boost_months || 0) > 0 && (
-                      <img src={getBoostImage(t.boost_months || 0)} alt={`Boost ${boostLevel}`}
-                        className="absolute -bottom-1 -right-1 w-5 h-5" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground truncate">{t.display_name || t.discord_username || "Unknown"}</p>
-                    <p className="text-xs text-muted-foreground truncate">@{t.discord_username}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <img src={statusIcons.online} alt="" className="w-4 h-4" />
-                    <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive rounded-lg p-2 h-8 w-8"
-                      onClick={(e) => { e.stopPropagation(); deleteToken(t.id); }}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
-      </motion.div>
-
-      {/* Recent Sessions */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-        className="card-modern rounded-2xl p-5">
-        <h2 className="text-base font-semibold mb-3 flex items-center gap-2">
-          <img src={statusIcons.log} alt="" className="w-5 h-5" />
-          آخر الجلسات
-        </h2>
-        {recentSessions.length === 0 ? (
-          <div className="text-center py-6 text-muted-foreground">
-            <img src={statusIcons.messages} alt="" className="w-10 h-10 mx-auto mb-2 opacity-20" />
-            <p className="text-sm">لا توجد جلسات بعد</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {recentSessions.map((session, i) => (
-              <motion.div key={session.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
-                className="flex items-center gap-3 p-3 rounded-xl bg-secondary/20 hover:bg-secondary/30 transition-all border border-primary/[0.05]">
-                {session.hero_image ? (
-                  <img src={session.hero_image} alt="" className="w-9 h-9 rounded-lg object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).src = statusIcons.quest; }} />
-                ) : (
-                  <img src={statusIcons.quest} alt="" className="w-9 h-9 rounded-lg" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground text-sm truncate">{session.quest_name || session.quest_id}</p>
-                  <p className="text-xs text-muted-foreground truncate">{session.game_title || "مهمة"}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {session.target > 0 && (
-                    <span className="text-xs text-muted-foreground">{Math.round((session.progress / session.target) * 100)}%</span>
-                  )}
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[session.status]}`}>
-                    {statusLabels[session.status]}
-                  </span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </motion.div>
-
-      </div>{/* End Left Column */}
-
-      {/* Right Column: Quest Solver */}
-      {selectedToken && (
-        <div className="lg:w-1/2 lg:min-w-0">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-          className="card-modern rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <img src={statusIcons.quest} alt="" className="w-5 h-5" />
-              حل المهمات — {selectedToken.display_name || selectedToken.discord_username}
+        {/* Tokens — compact left panel */}
+        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="lg:col-span-4 rounded-2xl bg-card/50 border border-border/20 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold flex items-center gap-1.5">
+              <img src={statusIcons.discord} alt="" className="w-4 h-4" />
+              التوكنات
             </h2>
-            <Button onClick={fetchQuests} disabled={loadingQuests || isActive} className="rounded-xl bg-gradient-primary text-white hover:opacity-90 text-sm">
-              {loadingQuests ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Search className="w-4 h-4 ml-1" />جلب المهمات</>}
+            <Button onClick={() => setShowAddModal(true)} size="sm" className="rounded-lg bg-primary/10 text-primary hover:bg-primary/15 text-[10px] h-7 px-2.5">
+              <Plus className="w-3 h-3 ml-0.5" />إضافة
             </Button>
           </div>
 
-          {/* Quests Grid */}
-          <AnimatePresence>
-            {quests.length > 0 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                {quests.map((quest, i) => {
-                  const rewardIcon = getRewardIcon(quest.reward_name);
-                  const alreadyCompleted = quest.completed || isQuestCompleted(quest.id);
-                  return (
-                    <motion.div key={quest.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}
-                      onClick={() => {
-                        if (isActive) return;
-                        setSelectedQuest(quest);
-                        setLogs([]);
-                        setSessionStatus("idle");
-                        setSessionId(null);
-                        setLiveProgress(null);
-                      }}
-                      className={`rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 border ${
-                        selectedQuest?.id === quest.id ? "border-primary/40 glow-primary" : "border-primary/[0.08] hover:border-primary/20"
-                      } ${alreadyCompleted ? "opacity-60" : ""} bg-gradient-card`}>
-                      {quest.hero_image && (
-                        <div className="h-28 overflow-hidden relative">
-                          <img src={quest.hero_image} alt={quest.name} className="w-full h-full object-cover"
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                          {alreadyCompleted && (
-                            <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-success/20 border border-success/30">
-                                <CheckCircle className="w-4 h-4 text-success" />
-                                <span className="text-xs text-success font-medium">مكتملة</span>
-                              </div>
-                            </div>
-                          )}
+          {tokens.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">
+              <img src={statusIcons.customer} alt="" className="w-10 h-10 mx-auto mb-2 opacity-20" />
+              <p className="text-xs">أضف توكن للبدء</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {tokens.map((t, i) => {
+                const boostLevel = getBoostLevel(t.boost_months || 0);
+                const isSelected = selectedToken?.id === t.id;
+                return (
+                  <motion.div key={t.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
+                    onClick={() => setSelectedToken(t)}
+                    className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 ${
+                      isSelected ? "bg-primary/8 border border-primary/20" : "bg-background/30 border border-transparent hover:border-border/30"
+                    }`}>
+                    <div className="relative">
+                      {t.avatar_url ? (
+                        <img src={t.avatar_url} alt="" className="w-9 h-9 rounded-lg object-cover" />
+                      ) : (
+                        <div className="w-9 h-9 rounded-lg bg-gradient-accent flex items-center justify-center">
+                          <User className="w-4 h-4 text-white" />
                         </div>
                       )}
-                      <div className="p-4">
-                        <div className="flex items-start justify-between mb-1">
-                          <h3 className="font-semibold text-foreground text-sm">{quest.name}</h3>
-                          {alreadyCompleted ? (
-                            <CheckCircle className="w-5 h-5 text-success shrink-0" />
-                          ) : quest.supported ? (
-                            <img src="/emojis/quest.png" alt="" className="w-5 h-5 shrink-0 opacity-60" />
-                          ) : (
-                            <XCircle className="w-5 h-5 text-muted-foreground shrink-0" />
+                      {(t.boost_months || 0) > 0 && (
+                        <img src={getBoostImage(t.boost_months || 0)} alt="" className="absolute -bottom-1 -right-1 w-4 h-4" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-foreground truncate">{t.display_name || t.discord_username || "Unknown"}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">@{t.discord_username}</p>
+                    </div>
+                    <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive p-1 h-6 w-6 rounded-md"
+                      onClick={(e) => { e.stopPropagation(); deleteToken(t.id); }}>
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Recent Sessions below tokens */}
+          <div className="mt-4 pt-4 border-t border-border/20">
+            <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5">
+              <img src={statusIcons.log} alt="" className="w-3.5 h-3.5" />
+              آخر الجلسات
+            </h3>
+            {recentSessions.length === 0 ? (
+              <p className="text-[10px] text-muted-foreground text-center py-3">لا جلسات بعد</p>
+            ) : (
+              <div className="space-y-1.5">
+                {recentSessions.map((session) => (
+                  <div key={session.id} className="flex items-center gap-2 p-2 rounded-lg bg-background/20 hover:bg-background/40 transition-colors">
+                    {session.hero_image ? (
+                      <img src={session.hero_image} alt="" className="w-7 h-7 rounded-md object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).src = statusIcons.quest; }} />
+                    ) : (
+                      <img src={statusIcons.quest} alt="" className="w-7 h-7 rounded-md" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-semibold text-foreground truncate">{session.quest_name || session.quest_id}</p>
+                    </div>
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold ${statusColors[session.status]}`}>
+                      {statusLabels[session.status]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Quest Solver — main area */}
+        {selectedToken && (
+          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+            className="lg:col-span-8 rounded-2xl bg-card/50 border border-border/20 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-bold flex items-center gap-1.5">
+                <img src={statusIcons.quest} alt="" className="w-4 h-4" />
+                حل المهمات — {selectedToken.display_name || selectedToken.discord_username}
+              </h2>
+              <Button onClick={fetchQuests} disabled={loadingQuests || isActive}
+                className="rounded-lg bg-primary/10 text-primary hover:bg-primary/15 text-[10px] h-7 px-2.5">
+                {loadingQuests ? <RefreshCw className="w-3 h-3 animate-spin" /> : <><Search className="w-3 h-3 ml-0.5" />جلب</>}
+              </Button>
+            </div>
+
+            {/* Quests Grid — smaller cards */}
+            <AnimatePresence>
+              {quests.length > 0 && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-4">
+                  {quests.map((quest, i) => {
+                    const rewardIcon = getRewardIcon(quest.reward_name);
+                    const alreadyCompleted = quest.completed || isQuestCompleted(quest.id);
+                    return (
+                      <motion.div key={quest.id} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.03 }}
+                        onClick={() => {
+                          if (isActive) return;
+                          setSelectedQuest(quest);
+                          setLogs([]);
+                          setSessionStatus("idle");
+                          setSessionId(null);
+                          setLiveProgress(null);
+                        }}
+                        className={`rounded-xl overflow-hidden cursor-pointer transition-all duration-200 border ${
+                          selectedQuest?.id === quest.id ? "border-primary/30 bg-primary/[0.03]" : "border-border/15 hover:border-border/30"
+                        } ${alreadyCompleted ? "opacity-50" : ""}`}>
+                        {quest.hero_image && (
+                          <div className="h-24 overflow-hidden relative">
+                            <img src={quest.hero_image} alt={quest.name} className="w-full h-full object-cover"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                            {alreadyCompleted && (
+                              <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-success/10 text-success text-[10px] font-semibold">
+                                  <CheckCircle className="w-3 h-3" />مكتملة
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="p-3">
+                          <div className="flex items-start justify-between mb-1">
+                            <h3 className="font-bold text-foreground text-xs leading-tight">{quest.name}</h3>
+                            {alreadyCompleted ? (
+                              <CheckCircle className="w-4 h-4 text-success shrink-0" />
+                            ) : quest.supported ? (
+                              <img src="/emojis/quest.png" alt="" className="w-4 h-4 shrink-0 opacity-50" />
+                            ) : (
+                              <XCircle className="w-4 h-4 text-muted-foreground shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground">{quest.game_title}</p>
+                          <div className="flex items-center gap-1 mt-1">
+                            {rewardIcon && <img src={rewardIcon} alt="" className="w-3.5 h-3.5" />}
+                            <p className="text-[10px] text-primary/50 font-medium">{quest.reward_name}</p>
+                          </div>
+
+                          {quest.tasks?.map(task => {
+                            const taskIcon = questTypeIcons[task.id];
+                            return (
+                              <div key={task.id} className="mt-2">
+                                <div className="flex justify-between items-center text-[10px] text-muted-foreground mb-0.5">
+                                  <span className="flex items-center gap-1">
+                                    {taskIcon && <img src={taskIcon} alt="" className="w-3 h-3" />}
+                                    {task.id.replace(/_/g, " ")}
+                                  </span>
+                                  <span>{task.percent}%</span>
+                                </div>
+                                <div className="h-1 rounded-full bg-border/30 overflow-hidden">
+                                  <motion.div initial={{ width: 0 }} animate={{ width: `${task.percent}%` }}
+                                    className="h-full rounded-full bg-primary/60" transition={{ duration: 0.6 }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          {quest.expires_at && (
+                            <p className="text-[9px] text-muted-foreground mt-1.5 flex items-center gap-0.5">
+                              <Clock className="w-2.5 h-2.5" />
+                              {new Date(quest.expires_at).toLocaleDateString("ar")}
+                            </p>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground">{quest.game_title}</p>
-                        <div className="flex items-center gap-1 mt-1">
-                          {rewardIcon && <img src={rewardIcon} alt="" className="w-4 h-4" />}
-                          <p className="text-xs text-primary/60 font-medium">{quest.reward_name}</p>
-                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-                        {quest.tasks?.map(task => {
-                          const taskIcon = questTypeIcons[task.id];
-                          return (
-                            <div key={task.id} className="mt-2">
-                              <div className="flex justify-between items-center text-xs text-muted-foreground mb-1">
-                                <span className="flex items-center gap-1">
-                                  {taskIcon && <img src={taskIcon} alt="" className="w-3.5 h-3.5" />}
-                                  {task.id.replace(/_/g, " ")}
-                                </span>
-                                <span>{task.percent}%</span>
-                              </div>
-                              <div className="h-1.5 rounded-full bg-secondary/50 overflow-hidden">
-                                <motion.div initial={{ width: 0 }} animate={{ width: `${task.percent}%` }}
-                                  className="h-full rounded-full bg-gradient-primary" transition={{ duration: 0.8 }} />
-                              </div>
-                            </div>
-                          );
-                        })}
-
-                        {quest.expires_at && (
-                          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            تنتهي: {new Date(quest.expires_at).toLocaleDateString("ar")}
-                          </p>
+            {/* Controls */}
+            {selectedQuest && (
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                className="rounded-xl bg-background/30 border border-border/15 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <img src={statusIcons.quest} alt="" className="w-5 h-5" />
+                    <div>
+                      <h3 className="font-bold text-foreground text-xs">{selectedQuest.name}</h3>
+                      <p className="text-[10px] text-muted-foreground">{selectedQuest.game_title}</p>
+                      {isActive && (
+                        <span className={`inline-block mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold ${sessionStatus === "running" ? "bg-primary/10 text-primary" : "bg-warning/10 text-warning"}`}>
+                          {sessionStatus === "running" ? "يعمل" : "موقف"}
+                        </span>
+                      )}
+                      {sessionStatus === "completed" && (
+                        <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-success/10 text-success">✅ مكتملة</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {sessionStatus === "idle" && (
+                      <Button onClick={startSolving}
+                        disabled={!selectedQuest.supported || selectedQuest.completed || isQuestCompleted(selectedQuest.id)}
+                        className="rounded-lg bg-gradient-primary text-white text-[10px] h-7 px-3 hover:opacity-90 disabled:opacity-30">
+                        {isQuestCompleted(selectedQuest.id) || selectedQuest.completed ? (
+                          <><CheckCircle className="w-3 h-3 ml-0.5" />مكتملة</>
+                        ) : (
+                          <><Play className="w-3 h-3 ml-0.5" />بدء</>
                         )}
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Controls */}
-          {selectedQuest && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-xl bg-secondary/20 border border-primary/[0.08] p-4"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <img src={statusIcons.quest} alt="" className="w-6 h-6" />
-                  <div>
-                    <h3 className="font-semibold text-foreground text-sm">{selectedQuest.name}</h3>
-                    <p className="text-xs text-muted-foreground">{selectedQuest.game_title}</p>
-                    {isActive && (
-                      <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${sessionStatus === "running" ? "bg-primary/15 text-primary" : "bg-warning/15 text-warning"}`}>
-                        {sessionStatus === "running" ? "قيد التشغيل" : "متوقف مؤقتاً"}
-                      </span>
+                      </Button>
                     )}
-                    {sessionStatus === "completed" && (
-                      <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success/15 text-success">
-                        ✅ مكتملة — يتم إعادة التعيين...
-                      </span>
+                    {sessionStatus === "running" && (
+                      <>
+                        <Button onClick={() => controlQuest("pause")} className="rounded-lg bg-warning/8 text-warning hover:bg-warning/15 text-[10px] h-7 px-2.5 border border-warning/15">
+                          <Pause className="w-3 h-3 ml-0.5" />إيقاف
+                        </Button>
+                        <Button onClick={() => controlQuest("stop")} className="rounded-lg bg-destructive/8 text-destructive hover:bg-destructive/15 text-[10px] h-7 px-2.5 border border-destructive/15">
+                          <Square className="w-3 h-3 ml-0.5" />إنهاء
+                        </Button>
+                      </>
+                    )}
+                    {sessionStatus === "paused" && (
+                      <>
+                        <Button onClick={() => controlQuest("resume")} className="rounded-lg bg-gradient-primary text-white text-[10px] h-7 px-2.5 hover:opacity-90">
+                          <RotateCcw className="w-3 h-3 ml-0.5" />استئناف
+                        </Button>
+                        <Button onClick={() => controlQuest("stop")} className="rounded-lg bg-destructive/8 text-destructive hover:bg-destructive/15 text-[10px] h-7 px-2.5 border border-destructive/15">
+                          <Square className="w-3 h-3 ml-0.5" />إنهاء
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  {sessionStatus === "idle" && (
-                    <Button onClick={startSolving}
-                      disabled={!selectedQuest.supported || selectedQuest.completed || isQuestCompleted(selectedQuest.id)}
-                      className="rounded-xl bg-gradient-primary text-white hover:opacity-90 text-sm disabled:opacity-30 glow-sm">
-                      {isQuestCompleted(selectedQuest.id) || selectedQuest.completed ? (
-                        <><CheckCircle className="w-4 h-4 ml-1" /> مكتملة مسبقاً</>
-                      ) : (
-                        <><Play className="w-4 h-4 ml-1" /> بدء</>
-                      )}
-                    </Button>
-                  )}
-                  {sessionStatus === "running" && (
-                    <>
-                      <Button onClick={() => controlQuest("pause")} className="rounded-xl bg-warning/10 text-warning hover:bg-warning/20 border border-warning/20 text-sm">
-                        <Pause className="w-4 h-4 ml-1" /> إيقاف مؤقت
-                      </Button>
-                      <Button onClick={() => controlQuest("stop")} className="rounded-xl bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 text-sm">
-                        <Square className="w-4 h-4 ml-1" /> إيقاف
-                      </Button>
-                    </>
-                  )}
-                  {sessionStatus === "paused" && (
-                    <>
-                      <Button onClick={() => controlQuest("resume")} className="rounded-xl bg-gradient-primary text-white hover:opacity-90 text-sm glow-sm">
-                        <RotateCcw className="w-4 h-4 ml-1" /> استئناف
-                      </Button>
-                      <Button onClick={() => controlQuest("stop")} className="rounded-xl bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 text-sm">
-                        <Square className="w-4 h-4 ml-1" /> إيقاف
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
 
-              {/* Logs */}
-              <AnimatePresence>
-                {logs.length > 0 && sessionStatus !== "idle" && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="bg-background/60 rounded-xl p-3 font-mono text-xs max-h-48 overflow-y-auto space-y-0.5 border border-primary/[0.06]"
-                  >
-                    {logs.map((log, i) => (
-                      <motion.div key={i} initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} className="text-muted-foreground">
-                        <span className="text-primary/30">[{i + 1}]</span> {log}
-                      </motion.div>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          )}
-        </motion.div>
-        </div>
-      )}
-
-      </div>{/* End Main Layout */}
+                {/* Logs */}
+                <AnimatePresence>
+                  {logs.length > 0 && sessionStatus !== "idle" && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="bg-background/50 rounded-lg p-2.5 font-mono text-[10px] max-h-36 overflow-y-auto space-y-0.5 border border-border/10 mt-2"
+                    >
+                      {logs.map((log, i) => (
+                        <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-muted-foreground">
+                          <span className="text-primary/25">[{i + 1}]</span> {log}
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 }

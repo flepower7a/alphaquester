@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Shield, Check, X, ArrowRight, Loader2, Crown, Rocket, Star, Clock, Globe } from "lucide-react";
+import { Shield, Check, X, ArrowLeft, Loader2, Rocket, Crown, Star, Clock, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -69,12 +69,12 @@ export default function Verification() {
   };
 
   const features = [
-    { icon: Rocket, title: "حل تلقائي للمهمات", desc: "محرك ذكي يحل المهمات بالكامل بدون تدخل" },
-    { icon: Crown, title: "وصول غير محدود", desc: "جميع المهمات والمكافآت متاحة لك" },
-    { icon: Clock, title: "حل سريع وفوري", desc: "تقنية متقدمة تنجز المهمات بأسرع وقت" },
-    { icon: Shield, title: "حماية كاملة", desc: "تشفير متقدم وحماية لحسابك" },
-    { icon: Globe, title: "دعم جميع المناطق", desc: "يعمل من أي مكان بدون قيود" },
-    { icon: Star, title: "تحديثات مستمرة", desc: "مهمات جديدة تُضاف أول بأول" },
+    { icon: Rocket, title: "حل تلقائي", desc: "محرك ذكي يحل المهمات بالكامل" },
+    { icon: Crown, title: "وصول غير محدود", desc: "جميع المهمات والمكافآت" },
+    { icon: Clock, title: "حل سريع", desc: "تقنية متقدمة وسريعة" },
+    { icon: Shield, title: "حماية كاملة", desc: "تشفير متقدم لحسابك" },
+    { icon: Globe, title: "بدون قيود", desc: "يعمل من أي مكان" },
+    { icon: Star, title: "تحديثات مستمرة", desc: "مهمات جديدة أول بأول" },
   ];
 
   if (checking) {
@@ -86,100 +86,93 @@ export default function Verification() {
   }
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden" dir="rtl" style={{ fontFamily: "'Cairo', sans-serif" }}>
-      {/* Background orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="orb orb-purple w-[600px] h-[600px] top-1/4 right-1/4 opacity-40" />
-        <div className="orb orb-blue w-[500px] h-[500px] bottom-1/3 left-1/3 opacity-25" />
+    <div className="min-h-screen bg-background relative overflow-hidden" dir="rtl">
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute w-[600px] h-[600px] top-1/4 left-1/2 -translate-x-1/2 rounded-full bg-primary/[0.04] blur-[120px]" />
       </div>
 
-      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-12">
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-10">
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} className="text-center mb-10">
-          <motion.div className="inline-flex items-center gap-3 mb-5" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.2 }}>
-            <div className="p-4 rounded-xl bg-gradient-primary glow-primary animate-pulse-glow">
-              <Shield className="w-9 h-9 text-white" />
-            </div>
-          </motion.div>
-          <h1 className="text-4xl md:text-5xl font-black text-gradient-strong mb-3">أهلاً بك في بريميوم ألفا</h1>
-          <p className="text-muted-foreground text-lg max-w-md mx-auto">أدخل كود الاشتراك للوصول الكامل لجميع المميزات</p>
+        <motion.div initial={{ opacity: 0, y: -15 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-primary flex items-center justify-center mx-auto mb-4 glow-primary">
+            <Shield className="w-7 h-7 text-white" />
+          </div>
+          <h1 className="text-3xl md:text-4xl font-black text-gradient-strong mb-2">بريميوم ألفا</h1>
+          <p className="text-muted-foreground text-sm">أدخل كود الاشتراك للوصول الكامل</p>
         </motion.div>
 
-        {/* Main Card */}
-        <motion.div initial={{ opacity: 0, y: 25, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: 0.3 }} className="w-full max-w-lg">
-          <div className="card-modern rounded-2xl p-8 gradient-border">
+        {/* Bento layout: form + features side by side */}
+        <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-5 gap-4">
+          {/* Code form */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+            className="lg:col-span-3 rounded-3xl bg-card/60 border border-border/20 p-8">
             <AnimatePresence mode="wait">
               {state === "success" ? (
                 <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-6">
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring" }}
-                    className="w-20 h-20 rounded-full bg-success/10 border border-success/20 flex items-center justify-center mx-auto mb-5 glow-success">
-                    <Check className="w-10 h-10 text-success" />
+                    className="w-16 h-16 rounded-full bg-success/10 border border-success/20 flex items-center justify-center mx-auto mb-4">
+                    <Check className="w-8 h-8 text-success" />
                   </motion.div>
-                  <h2 className="text-2xl font-bold text-foreground mb-2">تم التفعيل بنجاح! 🎉</h2>
-                  <p className="text-muted-foreground mb-6">أنت الآن عضو بريميوم، استمتع بجميع المميزات</p>
+                  <h2 className="text-xl font-bold text-foreground mb-2">تم التفعيل! 🎉</h2>
+                  <p className="text-sm text-muted-foreground mb-5">أنت الآن عضو بريميوم</p>
                   <Button onClick={() => navigate("/dashboard", { replace: true })}
-                    className="w-full h-13 rounded-xl bg-gradient-primary text-white hover:opacity-90 font-bold text-base glow-primary">
-                    <span className="flex items-center gap-2">الذهاب للوحة التحكم <ArrowRight className="w-4 h-4 rotate-180" /></span>
+                    className="w-full h-11 rounded-xl bg-gradient-primary text-white font-bold text-sm glow-sm">
+                    الذهاب للوحة التحكم <ArrowLeft className="w-3.5 h-3.5 mr-1" />
                   </Button>
                 </motion.div>
               ) : (
                 <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                  <div className="mb-6">
-                    <label className="text-foreground/70 mb-3 block text-sm font-medium">كود الاشتراك</label>
-                    <div className="flex items-center justify-center gap-2 md:gap-3 dir-ltr" dir="ltr" onPaste={handlePaste}>
-                      {codes.map((code, i) => (
-                        <div key={i} className="flex items-center gap-2 md:gap-3">
-                          <input ref={(el) => (inputRefs.current[i] = el)} type="text" maxLength={4} value={code}
-                            onChange={(e) => handleChange(i, e.target.value)} onKeyDown={(e) => handleKeyDown(i, e)}
-                            className="w-[72px] md:w-20 h-14 md:h-16 text-center text-lg md:text-xl font-bold tracking-[0.2em] rounded-xl bg-secondary/50 border border-primary/[0.1] text-foreground focus:border-primary/30 focus:ring-1 focus:ring-primary/20 outline-none transition-all duration-300 uppercase"
-                            placeholder="••••" />
-                          {i < 3 && <span className="text-primary/20 text-2xl font-light select-none">—</span>}
-                        </div>
-                      ))}
-                    </div>
+                  <label className="text-foreground/60 mb-3 block text-xs font-semibold">كود الاشتراك</label>
+                  <div className="flex items-center justify-center gap-2 md:gap-3" dir="ltr" onPaste={handlePaste}>
+                    {codes.map((code, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <input ref={(el) => (inputRefs.current[i] = el)} type="text" maxLength={4} value={code}
+                          onChange={(e) => handleChange(i, e.target.value)} onKeyDown={(e) => handleKeyDown(i, e)}
+                          className="w-16 md:w-[72px] h-12 md:h-14 text-center text-base font-bold tracking-[0.15em] rounded-xl bg-background/50 border border-border/40 text-foreground focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all uppercase"
+                          placeholder="••••" />
+                        {i < 3 && <span className="text-border text-xl select-none">—</span>}
+                      </div>
+                    ))}
                   </div>
 
                   <AnimatePresence>
                     {state === "error" && errorMsg && (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                        className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/15 flex items-center gap-2 text-destructive text-sm">
-                        <X className="w-4 h-4 shrink-0" />{errorMsg}
+                        className="mt-4 p-3 rounded-xl bg-destructive/8 border border-destructive/15 flex items-center gap-2 text-destructive text-xs">
+                        <X className="w-3.5 h-3.5 shrink-0" />{errorMsg}
                       </motion.div>
                     )}
                   </AnimatePresence>
 
                   <Button onClick={handleVerify} disabled={!isComplete || state === "loading"}
-                    className="w-full h-13 rounded-xl bg-gradient-primary text-white hover:opacity-90 font-bold text-base transition-all duration-500 hover:scale-[1.02] glow-primary hover:glow-gradient disabled:opacity-40">
+                    className="w-full h-11 rounded-xl bg-gradient-primary text-white font-bold text-sm mt-5 glow-sm hover:opacity-90 disabled:opacity-40">
                     {state === "loading" ? (
-                      <motion.div className="flex items-center gap-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <Loader2 className="w-5 h-5 animate-spin" /><span>جاري التحقق...</span>
-                      </motion.div>
+                      <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />جاري التحقق...</span>
                     ) : (
-                      <span className="flex items-center gap-2">تحقق من الاشتراك <Shield className="w-4 h-4" /></span>
+                      <span className="flex items-center gap-2">تحقق <Shield className="w-3.5 h-3.5" /></span>
                     )}
                   </Button>
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-        </motion.div>
+          </motion.div>
 
-        {/* Features Grid */}
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="w-full max-w-3xl mt-12">
-          <h3 className="text-xl font-bold text-center text-gradient mb-6">مميزات الاشتراك البريميوم</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {features.map((f, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 + i * 0.08 }}
-                className="card-modern rounded-xl p-5 group">
-                <div className="w-10 h-10 rounded-lg bg-gradient-primary glow-sm flex items-center justify-center mb-3">
-                  <f.icon className="w-5 h-5 text-white" />
+          {/* Features mini grid */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+            className="lg:col-span-2 grid grid-cols-2 lg:grid-cols-1 gap-3">
+            {features.slice(0, 4).map((f, i) => (
+              <div key={i} className="rounded-2xl bg-card/40 border border-border/15 p-4 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/8 flex items-center justify-center shrink-0 mt-0.5">
+                  <f.icon className="w-3.5 h-3.5 text-primary" />
                 </div>
-                <h4 className="font-bold text-foreground text-sm mb-1">{f.title}</h4>
-                <p className="text-muted-foreground text-xs leading-relaxed">{f.desc}</p>
-              </motion.div>
+                <div>
+                  <h4 className="text-xs font-bold text-foreground">{f.title}</h4>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">{f.desc}</p>
+                </div>
+              </div>
             ))}
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );

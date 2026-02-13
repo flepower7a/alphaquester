@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Settings, User, Globe, Save, Key, Trash2 } from "lucide-react";
+import { User, Globe, Save, Key, Trash2 } from "lucide-react";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -27,7 +27,7 @@ export default function SettingsPage() {
     if (!user) return;
     setSaving(true);
     const { error } = await supabase.from("profiles").update({ username, language }).eq("user_id", user.id);
-    toast[error ? "error" : "success"](error ? "خطأ في حفظ الإعدادات" : "تم حفظ الإعدادات");
+    toast[error ? "error" : "success"](error ? "خطأ في الحفظ" : "تم الحفظ");
     setSaving(false);
   };
 
@@ -37,37 +37,33 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-bold flex items-center gap-3">
-          <motion.div className="p-2.5 rounded-xl bg-gradient-primary glow-sm" whileHover={{ scale: 1.05 }}>
-            <Settings className="w-6 h-6 text-white" />
-          </motion.div>
-          الإعدادات
-        </h1>
-      </motion.div>
+    <div className="space-y-4 max-w-2xl">
+      <h1 className="text-lg font-black text-foreground">الإعدادات</h1>
 
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card-modern rounded-2xl p-6 space-y-5">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <User className="w-5 h-5 text-primary" /> الملف الشخصي
+      {/* Profile — bento card */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl bg-card/50 border border-border/20 p-5 space-y-4">
+        <h2 className="text-sm font-bold flex items-center gap-1.5">
+          <User className="w-3.5 h-3.5 text-primary" /> الملف الشخصي
         </h2>
 
         <div>
-          <Label className="mb-2 block text-foreground/70">اسم المستخدم</Label>
-          <Input value={username} onChange={(e) => setUsername(e.target.value)} className="h-12 rounded-xl bg-secondary/50 border-primary/[0.1]" />
+          <Label className="mb-1.5 block text-[11px] font-semibold text-foreground/60">اسم المستخدم</Label>
+          <Input value={username} onChange={(e) => setUsername(e.target.value)}
+            className="h-10 rounded-xl bg-background/50 border-border/30 text-sm" />
         </div>
 
         <div>
-          <Label className="mb-2 block text-foreground/70 flex items-center gap-2">
-            <Globe className="w-4 h-4" /> اللغة
+          <Label className="mb-1.5 block text-[11px] font-semibold text-foreground/60 flex items-center gap-1">
+            <Globe className="w-3 h-3" /> اللغة
           </Label>
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             {[{ value: "ar", label: "العربية 🇸🇦" }, { value: "en", label: "English 🇬🇧" }].map((lang) => (
               <button key={lang.value} onClick={() => setLanguage(lang.value)}
-                className={`px-5 py-3 rounded-xl text-sm font-medium transition-all duration-300 ${
+                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
                   language === lang.value
-                    ? "bg-gradient-primary text-white glow-sm"
-                    : "bg-secondary/30 text-muted-foreground hover:bg-secondary/50 border border-primary/[0.08]"
+                    ? "bg-primary/12 text-primary"
+                    : "bg-background/30 text-muted-foreground hover:text-foreground border border-border/20"
                 }`}>
                 {lang.label}
               </button>
@@ -75,34 +71,37 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <Button onClick={saveProfile} disabled={saving} className="rounded-xl bg-gradient-primary text-white hover:opacity-90 glow-sm">
-          <Save className="w-4 h-4 mr-2" />{saving ? "جاري الحفظ..." : "حفظ"}
+        <Button onClick={saveProfile} disabled={saving}
+          className="rounded-lg bg-gradient-primary text-white text-xs h-9 px-4 hover:opacity-90">
+          <Save className="w-3 h-3 ml-1" />{saving ? "جاري..." : "حفظ"}
         </Button>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="card-modern rounded-2xl p-6">
-        <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
-          <Key className="w-5 h-5 text-primary" /> التوكنات المحفوظة
+      {/* Tokens */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+        className="rounded-2xl bg-card/50 border border-border/20 p-5">
+        <h2 className="text-sm font-bold flex items-center gap-1.5 mb-3">
+          <Key className="w-3.5 h-3.5 text-primary" /> التوكنات المحفوظة
         </h2>
         {tokens.length === 0 ? (
-          <p className="text-muted-foreground text-sm py-4 text-center">لا توجد توكنات محفوظة</p>
+          <p className="text-xs text-muted-foreground text-center py-4">لا توكنات</p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {tokens.map((token) => (
-              <div key={token.id} className="flex items-center gap-3 p-4 rounded-xl bg-secondary/20 border border-primary/[0.06]">
-                <Key className="w-4 h-4 text-primary/50" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{token.discord_username || "مستخدم غير معروف"}</p>
-                  <p className="text-xs text-muted-foreground">{token.discord_user_id || "***"}</p>
+              <div key={token.id} className="flex items-center gap-3 p-3 rounded-xl bg-background/20 border border-border/10">
+                <Key className="w-3.5 h-3.5 text-muted-foreground" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold truncate">{token.discord_username || "غير معروف"}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{token.discord_user_id || "***"}</p>
                 </div>
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                  token.is_active ? "bg-success/15 text-success border border-success/20" : "bg-muted/50 text-muted-foreground border border-border/20"
+                <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold ${
+                  token.is_active ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
                 }`}>
                   {token.is_active ? "نشط" : "غير نشط"}
                 </span>
                 <Button variant="ghost" size="icon" onClick={() => deleteToken(token.id)}
-                  className="rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10">
-                  <Trash2 className="w-4 h-4" />
+                  className="rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/8 h-7 w-7">
+                  <Trash2 className="w-3.5 h-3.5" />
                 </Button>
               </div>
             ))}
