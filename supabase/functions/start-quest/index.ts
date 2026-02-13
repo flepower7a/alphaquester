@@ -125,7 +125,7 @@ serve(async (req) => {
         progress,
         target,
         hero_image: config?.assets?.hero
-          ? (config.assets.hero.startsWith("http") ? config.assets.hero : `https://cdn.discordapp.com/quest-assets/${config?.id || questId}/${config.assets.hero}`)
+          ? (config.assets.hero.startsWith("http") ? config.assets.hero : `https://cdn.discordapp.com/quests/${config?.id || questId}/${config.assets.hero}`)
           : null,
         started_at: new Date().toISOString(),
       })

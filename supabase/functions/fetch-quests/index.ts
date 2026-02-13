@@ -144,7 +144,7 @@ serve(async (req) => {
             heroImage = hero;
           } else {
             const configId = config?.id || q.id;
-            heroImage = `https://cdn.discordapp.com/quest-assets/${configId}/${hero}`;
+            heroImage = `https://cdn.discordapp.com/quests/${configId}/${hero}`;
           }
         }
 
