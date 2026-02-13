@@ -29,7 +29,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex relative">
+      {/* Background orbs */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="orb orb-purple w-[500px] h-[500px] -top-40 -right-40 opacity-40" />
+        <div className="orb orb-blue w-[400px] h-[400px] bottom-20 -left-40 opacity-30" />
+      </div>
+
       {/* Mobile overlay */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -37,7 +43,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-background/95 backdrop-blur-xl z-40 lg:hidden"
+            className="fixed inset-0 bg-background/90 backdrop-blur-xl z-40 lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
@@ -47,7 +53,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <motion.aside
         className={cn(
           "fixed lg:sticky top-0 left-0 h-screen w-72 z-50 flex flex-col",
-          "bg-sidebar border-r border-foreground/[0.05]",
+          "bg-sidebar border-r border-primary/[0.08]",
           "transform lg:transform-none transition-transform duration-300",
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
@@ -55,11 +61,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Logo */}
         <div className="p-6 flex items-center gap-3">
           <motion.div
-            className="p-2.5 rounded-2xl bg-foreground/5 border border-foreground/10 glow-white-sm"
+            className="p-2.5 rounded-xl bg-gradient-primary glow-primary"
             whileHover={{ scale: 1.08 }}
             transition={{ type: "spring", stiffness: 400 }}
           >
-            <Zap className="w-6 h-6 text-foreground" />
+            <Zap className="w-5 h-5 text-primary-foreground" />
           </motion.div>
           <span className="text-xl font-black text-gradient-strong">Alpha Quester</span>
           <button
@@ -71,7 +77,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-4 space-y-1.5 mt-6">
+        <nav className="flex-1 px-4 space-y-1 mt-4">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -80,17 +86,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium transition-all duration-400",
+                  "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300",
                   isActive
-                    ? "bg-foreground/[0.08] text-foreground glow-white-sm border border-foreground/[0.1]"
-                    : "text-sidebar-foreground hover:bg-foreground/[0.04] hover:text-foreground"
+                    ? "bg-primary/10 text-primary border border-primary/20 glow-sm"
+                    : "text-sidebar-foreground hover:bg-primary/[0.05] hover:text-foreground"
                 )}
               >
-                <item.icon className={cn("w-5 h-5 transition-colors", isActive ? "text-foreground" : "text-muted-foreground")} />
+                <item.icon className={cn("w-5 h-5 transition-colors", isActive ? "text-primary" : "text-muted-foreground")} />
                 <span>{item.label}</span>
                 {isActive && (
                   <motion.div layoutId="activeNav" className="ml-auto">
-                    <ChevronRight className="w-4 h-4 text-foreground/50" />
+                    <ChevronRight className="w-4 h-4 text-primary/60" />
                   </motion.div>
                 )}
               </Link>
@@ -99,10 +105,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </nav>
 
         {/* User section */}
-        <div className="p-4 border-t border-foreground/[0.05]">
+        <div className="p-4 border-t border-primary/[0.06]">
           <div className="flex items-center gap-3 px-3 py-3">
-            <div className="w-10 h-10 rounded-2xl bg-foreground/5 border border-foreground/[0.08] flex items-center justify-center glow-white-xs">
-              <User className="w-4 h-4 text-muted-foreground" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-accent flex items-center justify-center">
+              <User className="w-4 h-4 text-white" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold truncate text-foreground">
@@ -114,7 +120,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <Button
             variant="ghost"
             onClick={handleSignOut}
-            className="w-full mt-2 rounded-2xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-300"
+            className="w-full mt-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-300"
           >
             <LogOut className="w-4 h-4 mr-2" />
             تسجيل الخروج
@@ -123,9 +129,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       </motion.aside>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 flex flex-col min-h-screen relative z-10">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 bg-background/70 backdrop-blur-2xl border-b border-foreground/[0.04] px-6 py-4 flex items-center gap-4">
+        <header className="sticky top-0 z-30 bg-background/60 backdrop-blur-2xl border-b border-primary/[0.06] px-6 py-4 flex items-center gap-4">
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden text-muted-foreground hover:text-foreground transition-colors"

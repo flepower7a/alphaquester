@@ -36,27 +36,25 @@ export default function SettingsPage() {
     if (!error) { setTokens(tokens.filter(t => t.id !== id)); toast.success("تم حذف التوكن"); }
   };
 
-  const cardClass = "rounded-3xl bg-card/80 border border-border/30 backdrop-blur-xl glow-white-sm";
-
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-bold flex items-center gap-3">
-          <motion.div className="p-2.5 rounded-2xl bg-foreground/5 border border-border/40 glow-white-sm" whileHover={{ scale: 1.05 }}>
-            <Settings className="w-6 h-6 text-foreground" />
+          <motion.div className="p-2.5 rounded-xl bg-gradient-primary glow-sm" whileHover={{ scale: 1.05 }}>
+            <Settings className="w-6 h-6 text-white" />
           </motion.div>
           الإعدادات
         </h1>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className={cardClass + " p-6 space-y-5"}>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card-modern rounded-2xl p-6 space-y-5">
         <h2 className="text-lg font-semibold flex items-center gap-2">
-          <User className="w-5 h-5 text-muted-foreground" /> الملف الشخصي
+          <User className="w-5 h-5 text-primary" /> الملف الشخصي
         </h2>
 
         <div>
           <Label className="mb-2 block text-foreground/70">اسم المستخدم</Label>
-          <Input value={username} onChange={(e) => setUsername(e.target.value)} className="h-12 rounded-2xl bg-secondary/50 border-border/30" />
+          <Input value={username} onChange={(e) => setUsername(e.target.value)} className="h-12 rounded-xl bg-secondary/50 border-primary/[0.1]" />
         </div>
 
         <div>
@@ -66,10 +64,10 @@ export default function SettingsPage() {
           <div className="flex gap-3">
             {[{ value: "ar", label: "العربية 🇸🇦" }, { value: "en", label: "English 🇬🇧" }].map((lang) => (
               <button key={lang.value} onClick={() => setLanguage(lang.value)}
-                className={`px-5 py-3 rounded-2xl text-sm font-medium transition-all duration-300 ${
+                className={`px-5 py-3 rounded-xl text-sm font-medium transition-all duration-300 ${
                   language === lang.value
-                    ? "bg-foreground text-background"
-                    : "bg-secondary/30 text-muted-foreground hover:bg-secondary/50 border border-border/20"
+                    ? "bg-gradient-primary text-white glow-sm"
+                    : "bg-secondary/30 text-muted-foreground hover:bg-secondary/50 border border-primary/[0.08]"
                 }`}>
                 {lang.label}
               </button>
@@ -77,22 +75,22 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <Button onClick={saveProfile} disabled={saving} className="rounded-2xl bg-foreground text-background hover:bg-foreground/90 glow-white-sm">
+        <Button onClick={saveProfile} disabled={saving} className="rounded-xl bg-gradient-primary text-white hover:opacity-90 glow-sm">
           <Save className="w-4 h-4 mr-2" />{saving ? "جاري الحفظ..." : "حفظ"}
         </Button>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className={cardClass + " p-6"}>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="card-modern rounded-2xl p-6">
         <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
-          <Key className="w-5 h-5 text-muted-foreground" /> التوكنات المحفوظة
+          <Key className="w-5 h-5 text-primary" /> التوكنات المحفوظة
         </h2>
         {tokens.length === 0 ? (
           <p className="text-muted-foreground text-sm py-4 text-center">لا توجد توكنات محفوظة</p>
         ) : (
           <div className="space-y-3">
             {tokens.map((token) => (
-              <div key={token.id} className="flex items-center gap-3 p-4 rounded-2xl bg-secondary/20 border border-border/15">
-                <Key className="w-4 h-4 text-muted-foreground" />
+              <div key={token.id} className="flex items-center gap-3 p-4 rounded-xl bg-secondary/20 border border-primary/[0.06]">
+                <Key className="w-4 h-4 text-primary/50" />
                 <div className="flex-1">
                   <p className="text-sm font-medium">{token.discord_username || "مستخدم غير معروف"}</p>
                   <p className="text-xs text-muted-foreground">{token.discord_user_id || "***"}</p>
@@ -103,7 +101,7 @@ export default function SettingsPage() {
                   {token.is_active ? "نشط" : "غير نشط"}
                 </span>
                 <Button variant="ghost" size="icon" onClick={() => deleteToken(token.id)}
-                  className="rounded-2xl text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                  className="rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10">
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>

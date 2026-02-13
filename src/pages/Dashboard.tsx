@@ -49,8 +49,6 @@ interface SessionStats {
   totalSolved: number;
 }
 
-const cardClass = "rounded-3xl bg-card/80 border border-foreground/[0.06] backdrop-blur-2xl glow-white-sm card-hover";
-
 export default function Dashboard() {
   const { user } = useAuth();
   const [tokens, setTokens] = useState<TokenRecord[]>([]);
@@ -219,17 +217,9 @@ export default function Dashboard() {
         if (data?.progress !== undefined) {
           setLiveProgress({ progress: data.progress, target: data.target });
           setLogs(prev => [...prev, `📊 التقدم: ${data.progress}/${data.target}`]);
-          // Update quest tasks in real-time
           setQuests(prev => prev.map(q => {
             if (q.id !== selectedQuest?.id) return q;
-            return {
-              ...q,
-              tasks: q.tasks.map(t => ({
-                ...t,
-                current: data.progress,
-                percent: data.target > 0 ? Math.round((data.progress / data.target) * 100) : t.percent,
-              })),
-            };
+            return { ...q, tasks: q.tasks.map(t => ({ ...t, current: data.progress, percent: data.target > 0 ? Math.round((data.progress / data.target) * 100) : t.percent })) };
           }));
         }
 
@@ -239,7 +229,6 @@ export default function Dashboard() {
           if (data.status === "completed") {
             toast.success("✅ تم إكمال المهمة بنجاح!");
             setLogs(prev => [...prev, "✅ تم إكمال المهمة بنجاح!"]);
-            // Auto-reset after 3 seconds
             setTimeout(() => resetQuestState(), 3000);
           } else if (data.status === "failed") {
             setLogs(prev => [...prev, `❌ فشلت المهمة: ${data.error || ""}`]);
@@ -261,12 +250,8 @@ export default function Dashboard() {
       const token = await getStoredToken(selectedToken.id);
       if (!token) { setSessionStatus("idle"); return toast.error("لم يتم العثور على التوكن"); }
       storedTokenRef.current = token;
-
-      const { data, error } = await supabase.functions.invoke("start-quest", {
-        body: { token, questId: selectedQuest.id, method: selectedQuest.method },
-      });
+      const { data, error } = await supabase.functions.invoke("start-quest", { body: { token, questId: selectedQuest.id, method: selectedQuest.method } });
       if (error) throw error;
-
       if (data?.session?.id) {
         setSessionId(data.session.id);
         setLogs(prev => [...prev, "✅ تم إنشاء الجلسة، بدء إرسال heartbeats..."]);
@@ -285,9 +270,9 @@ export default function Dashboard() {
       if (error) throw error;
       setSessionStatus(data.status);
       setLogs(prev => [...prev, data.message]);
-      if (action === "stop") { resetQuestState(); }
-      else if (action === "pause") { stopPolling(); }
-      else if (action === "resume") { startPolling(sessionId); }
+      if (action === "stop") resetQuestState();
+      else if (action === "pause") stopPolling();
+      else if (action === "resume") startPolling(sessionId);
     } catch (err: any) { toast.error(err.message); }
   };
 
@@ -296,10 +281,10 @@ export default function Dashboard() {
 
   const statusColors: Record<string, string> = {
     completed: "bg-success/15 text-success border border-success/20",
-    running: "bg-warning/15 text-warning border border-warning/20",
+    running: "bg-primary/15 text-primary border border-primary/20",
     failed: "bg-destructive/15 text-destructive border border-destructive/20",
     stopped: "bg-muted/50 text-muted-foreground border border-border/30",
-    paused: "bg-foreground/5 text-foreground/70 border border-border/30",
+    paused: "bg-warning/15 text-warning border border-warning/20",
     pending: "bg-secondary text-secondary-foreground border border-border/30",
   };
   const statusLabels: Record<string, string> = {
@@ -308,19 +293,19 @@ export default function Dashboard() {
   };
 
   const statItems = [
-    { icon: Swords, label: "إجمالي الجلسات", value: stats.totalSessions, emoji: statusIcons.quest },
-    { icon: Trophy, label: "المهمات المكتملة", value: stats.completedSessions, emoji: statusIcons.success },
-    { icon: Activity, label: "جلسات نشطة", value: stats.runningSessions, emoji: statusIcons.online },
-    { icon: TrendingUp, label: "إجمالي الحلول", value: stats.totalSolved, emoji: statusIcons.check },
+    { icon: Swords, label: "إجمالي الجلسات", value: stats.totalSessions, color: "from-primary to-accent" },
+    { icon: Trophy, label: "المهمات المكتملة", value: stats.completedSessions, color: "from-success to-[hsl(160_84%_30%)]" },
+    { icon: Activity, label: "جلسات نشطة", value: stats.runningSessions, color: "from-warning to-[hsl(38_92%_40%)]" },
+    { icon: TrendingUp, label: "إجمالي الحلول", value: stats.totalSolved, color: "from-accent to-primary" },
   ];
 
   return (
     <div className="space-y-5">
-      {/* Header + Stats Row */}
+      {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
-          <motion.div className="p-2.5 rounded-2xl bg-foreground/5 border border-border/40 glow-white-sm" whileHover={{ scale: 1.05 }}>
-            <Zap className="w-6 h-6 text-foreground" />
+          <motion.div className="p-2.5 rounded-xl bg-gradient-primary glow-primary" whileHover={{ scale: 1.05 }}>
+            <Zap className="w-6 h-6 text-white" />
           </motion.div>
           <div>
             <h1 className="text-xl font-bold text-foreground">مرحباً، {user?.email?.split("@")[0]} 👋</h1>
@@ -333,13 +318,15 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
         {statItems.map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className={cardClass + " p-4 group"}>
+            className="card-modern rounded-2xl p-4 group">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[11px] text-muted-foreground mb-0.5">{s.label}</p>
                 <p className="text-2xl font-bold text-foreground">{s.value}</p>
               </div>
-              <img src={s.emoji} alt="" className="w-7 h-7 opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
+              <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${s.color} flex items-center justify-center opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300`}>
+                <s.icon className="w-4 h-4 text-white" />
+              </div>
             </div>
           </motion.div>
         ))}
@@ -353,14 +340,16 @@ export default function Dashboard() {
             onClick={() => setShowAddModal(false)}>
             <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="rounded-3xl bg-card border border-border/40 p-8 max-w-md w-full glow-white-lg" onClick={e => e.stopPropagation()}>
+              className="card-modern rounded-2xl p-8 max-w-md w-full gradient-border" onClick={e => e.stopPropagation()}>
               <div className="text-center mb-6">
-                <img src={statusIcons.discord} alt="" className="w-12 h-12 mx-auto mb-3" />
+                <div className="w-14 h-14 rounded-xl bg-gradient-accent flex items-center justify-center mx-auto mb-3 glow-accent">
+                  <img src={statusIcons.discord} alt="" className="w-8 h-8" />
+                </div>
                 <h2 className="text-xl font-bold text-foreground">إضافة توكن Discord</h2>
                 <p className="text-sm text-muted-foreground mt-2">أدخل التوكن وسيتم حفظه بشكل آمن</p>
               </div>
 
-              <div className="rounded-2xl bg-warning/5 border border-warning/20 p-4 mb-5">
+              <div className="rounded-xl bg-warning/5 border border-warning/20 p-4 mb-5">
                 <p className="text-sm text-warning font-medium flex items-center gap-2">
                   <Shield className="w-4 h-4 shrink-0" />⚠️ تنبيه مهم
                 </p>
@@ -372,14 +361,14 @@ export default function Dashboard() {
               <div className="relative mb-4">
                 <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input type="password" value={newToken} onChange={e => setNewToken(e.target.value)}
-                  placeholder="أدخل توكن Discord هنا" className="pl-10 h-12 rounded-2xl bg-secondary/50 border-border/40 text-base" />
+                  placeholder="أدخل توكن Discord هنا" className="pl-10 h-12 rounded-xl bg-secondary/50 border-primary/[0.1] text-base" />
               </div>
 
               <div className="flex gap-3">
-                <Button onClick={() => setShowAddModal(false)} variant="ghost" className="flex-1 h-12 rounded-2xl border border-border/30">
+                <Button onClick={() => setShowAddModal(false)} variant="ghost" className="flex-1 h-12 rounded-xl border border-primary/[0.1]">
                   إلغاء
                 </Button>
-                <Button onClick={addToken} disabled={addingToken} className="flex-1 h-12 rounded-2xl bg-foreground text-background hover:bg-foreground/90">
+                <Button onClick={addToken} disabled={addingToken} className="flex-1 h-12 rounded-xl bg-gradient-primary text-white hover:opacity-90 glow-sm">
                   {addingToken ? <RefreshCw className="w-4 h-4 animate-spin" /> : <>حفظ التوكن</>}
                 </Button>
               </div>
@@ -390,19 +379,19 @@ export default function Dashboard() {
 
       {/* Main Layout: Two columns */}
       <div className="flex flex-col lg:flex-row gap-4">
-      
+
       {/* Left Column: Tokens + Recent Sessions */}
       <div className="flex flex-col gap-4 lg:w-1/2 lg:min-w-0">
 
       {/* Token Management */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-        className={cardClass + " p-5"}>
+        className="card-modern rounded-2xl p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <img src={statusIcons.discord} alt="" className="w-5 h-5" />
             التوكنات المحفوظة
           </h2>
-          <Button onClick={() => setShowAddModal(true)} size="sm" className="rounded-2xl bg-foreground/5 text-foreground hover:bg-foreground/10 border border-border/30">
+          <Button onClick={() => setShowAddModal(true)} size="sm" className="rounded-xl bg-gradient-primary text-white hover:opacity-90 text-xs">
             <Plus className="w-4 h-4 ml-1" />إضافة توكن
           </Button>
         </div>
@@ -421,13 +410,13 @@ export default function Dashboard() {
               return (
                 <motion.div key={t.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
                   onClick={() => setSelectedToken(t)}
-                  className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all duration-300 ${isSelected ? "bg-foreground/5 ring-1 ring-foreground/20 glow-white-sm" : "bg-secondary/30 hover:bg-secondary/50"}`}>
+                  className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all duration-300 ${isSelected ? "bg-primary/10 ring-1 ring-primary/30 glow-sm" : "bg-secondary/30 hover:bg-secondary/50 border border-primary/[0.05]"}`}>
                   <div className="relative">
                     {t.avatar_url ? (
-                      <img src={t.avatar_url} alt="" className="w-12 h-12 rounded-2xl object-cover" />
+                      <img src={t.avatar_url} alt="" className="w-12 h-12 rounded-xl object-cover" />
                     ) : (
-                      <div className="w-12 h-12 rounded-2xl bg-foreground/5 flex items-center justify-center">
-                        <User className="w-5 h-5 text-muted-foreground" />
+                      <div className="w-12 h-12 rounded-xl bg-gradient-accent flex items-center justify-center">
+                        <User className="w-5 h-5 text-white" />
                       </div>
                     )}
                     {(t.boost_months || 0) > 0 && (
@@ -441,7 +430,7 @@ export default function Dashboard() {
                   </div>
                   <div className="flex items-center gap-2">
                     <img src={statusIcons.online} alt="" className="w-4 h-4" />
-                    <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive rounded-xl p-2 h-8 w-8"
+                    <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive rounded-lg p-2 h-8 w-8"
                       onClick={(e) => { e.stopPropagation(); deleteToken(t.id); }}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
@@ -453,9 +442,9 @@ export default function Dashboard() {
         )}
       </motion.div>
 
-      {/* Recent Sessions - same column as tokens */}
+      {/* Recent Sessions */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-        className={cardClass + " p-5"}>
+        className="card-modern rounded-2xl p-5">
         <h2 className="text-base font-semibold mb-3 flex items-center gap-2">
           <img src={statusIcons.log} alt="" className="w-5 h-5" />
           آخر الجلسات
@@ -469,12 +458,12 @@ export default function Dashboard() {
           <div className="space-y-2">
             {recentSessions.map((session, i) => (
               <motion.div key={session.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
-                className="flex items-center gap-3 p-3 rounded-2xl bg-secondary/20 hover:bg-secondary/30 transition-all border border-border/10">
+                className="flex items-center gap-3 p-3 rounded-xl bg-secondary/20 hover:bg-secondary/30 transition-all border border-primary/[0.05]">
                 {session.hero_image ? (
-                  <img src={session.hero_image} alt="" className="w-9 h-9 rounded-xl object-cover"
+                  <img src={session.hero_image} alt="" className="w-9 h-9 rounded-lg object-cover"
                     onError={(e) => { (e.target as HTMLImageElement).src = statusIcons.quest; }} />
                 ) : (
-                  <img src={statusIcons.quest} alt="" className="w-9 h-9 rounded-xl" />
+                  <img src={statusIcons.quest} alt="" className="w-9 h-9 rounded-lg" />
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-foreground text-sm truncate">{session.quest_name || session.quest_id}</p>
@@ -500,13 +489,13 @@ export default function Dashboard() {
       {selectedToken && (
         <div className="lg:w-1/2 lg:min-w-0">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-          className={cardClass + " p-5"}>
+          className="card-modern rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <img src={statusIcons.quest} alt="" className="w-5 h-5" />
               حل المهمات — {selectedToken.display_name || selectedToken.discord_username}
             </h2>
-            <Button onClick={fetchQuests} disabled={loadingQuests || isActive} className="rounded-2xl bg-foreground text-background hover:bg-foreground/90">
+            <Button onClick={fetchQuests} disabled={loadingQuests || isActive} className="rounded-xl bg-gradient-primary text-white hover:opacity-90 text-sm">
               {loadingQuests ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Search className="w-4 h-4 ml-1" />جلب المهمات</>}
             </Button>
           </div>
@@ -528,9 +517,9 @@ export default function Dashboard() {
                         setSessionId(null);
                         setLiveProgress(null);
                       }}
-                      className={`rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 border border-border/30 ${
-                        selectedQuest?.id === quest.id ? "ring-1 ring-foreground/30 glow-white" : "bg-secondary/10 hover:bg-secondary/20"
-                      } ${alreadyCompleted ? "opacity-60" : ""}`}>
+                      className={`rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 border ${
+                        selectedQuest?.id === quest.id ? "border-primary/40 glow-primary" : "border-primary/[0.08] hover:border-primary/20"
+                      } ${alreadyCompleted ? "opacity-60" : ""} bg-gradient-card`}>
                       {quest.hero_image && (
                         <div className="h-28 overflow-hidden relative">
                           <img src={quest.hero_image} alt={quest.name} className="w-full h-full object-cover"
@@ -559,7 +548,7 @@ export default function Dashboard() {
                         <p className="text-xs text-muted-foreground">{quest.game_title}</p>
                         <div className="flex items-center gap-1 mt-1">
                           {rewardIcon && <img src={rewardIcon} alt="" className="w-4 h-4" />}
-                          <p className="text-xs text-foreground/60 font-medium">{quest.reward_name}</p>
+                          <p className="text-xs text-primary/60 font-medium">{quest.reward_name}</p>
                         </div>
 
                         {quest.tasks?.map(task => {
@@ -575,7 +564,7 @@ export default function Dashboard() {
                               </div>
                               <div className="h-1.5 rounded-full bg-secondary/50 overflow-hidden">
                                 <motion.div initial={{ width: 0 }} animate={{ width: `${task.percent}%` }}
-                                  className="h-full rounded-full bg-foreground/80" transition={{ duration: 0.8 }} />
+                                  className="h-full rounded-full bg-gradient-primary" transition={{ duration: 0.8 }} />
                               </div>
                             </div>
                           );
@@ -597,10 +586,10 @@ export default function Dashboard() {
 
           {/* Controls */}
           {selectedQuest && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl bg-secondary/20 border border-border/20 p-4"
+              className="rounded-xl bg-secondary/20 border border-primary/[0.08] p-4"
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
@@ -609,7 +598,7 @@ export default function Dashboard() {
                     <h3 className="font-semibold text-foreground text-sm">{selectedQuest.name}</h3>
                     <p className="text-xs text-muted-foreground">{selectedQuest.game_title}</p>
                     {isActive && (
-                      <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${sessionStatus === "running" ? "bg-success/15 text-success" : "bg-warning/15 text-warning"}`}>
+                      <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${sessionStatus === "running" ? "bg-primary/15 text-primary" : "bg-warning/15 text-warning"}`}>
                         {sessionStatus === "running" ? "قيد التشغيل" : "متوقف مؤقتاً"}
                       </span>
                     )}
@@ -622,9 +611,9 @@ export default function Dashboard() {
                 </div>
                 <div className="flex gap-2">
                   {sessionStatus === "idle" && (
-                    <Button onClick={startSolving} 
+                    <Button onClick={startSolving}
                       disabled={!selectedQuest.supported || selectedQuest.completed || isQuestCompleted(selectedQuest.id)}
-                      className="rounded-2xl bg-foreground text-background hover:bg-foreground/90 text-sm disabled:opacity-30">
+                      className="rounded-xl bg-gradient-primary text-white hover:opacity-90 text-sm disabled:opacity-30 glow-sm">
                       {isQuestCompleted(selectedQuest.id) || selectedQuest.completed ? (
                         <><CheckCircle className="w-4 h-4 ml-1" /> مكتملة مسبقاً</>
                       ) : (
@@ -634,20 +623,20 @@ export default function Dashboard() {
                   )}
                   {sessionStatus === "running" && (
                     <>
-                      <Button onClick={() => controlQuest("pause")} className="rounded-2xl bg-warning/10 text-warning hover:bg-warning/20 border border-warning/20 text-sm">
+                      <Button onClick={() => controlQuest("pause")} className="rounded-xl bg-warning/10 text-warning hover:bg-warning/20 border border-warning/20 text-sm">
                         <Pause className="w-4 h-4 ml-1" /> إيقاف مؤقت
                       </Button>
-                      <Button onClick={() => controlQuest("stop")} className="rounded-2xl bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 text-sm">
+                      <Button onClick={() => controlQuest("stop")} className="rounded-xl bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 text-sm">
                         <Square className="w-4 h-4 ml-1" /> إيقاف
                       </Button>
                     </>
                   )}
                   {sessionStatus === "paused" && (
                     <>
-                      <Button onClick={() => controlQuest("resume")} className="rounded-2xl bg-foreground text-background hover:bg-foreground/90 text-sm">
+                      <Button onClick={() => controlQuest("resume")} className="rounded-xl bg-gradient-primary text-white hover:opacity-90 text-sm glow-sm">
                         <RotateCcw className="w-4 h-4 ml-1" /> استئناف
                       </Button>
-                      <Button onClick={() => controlQuest("stop")} className="rounded-2xl bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 text-sm">
+                      <Button onClick={() => controlQuest("stop")} className="rounded-xl bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 text-sm">
                         <Square className="w-4 h-4 ml-1" /> إيقاف
                       </Button>
                     </>
@@ -658,15 +647,15 @@ export default function Dashboard() {
               {/* Logs */}
               <AnimatePresence>
                 {logs.length > 0 && sessionStatus !== "idle" && (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="bg-background/60 rounded-2xl p-3 font-mono text-xs max-h-48 overflow-y-auto space-y-0.5 border border-border/20"
+                    className="bg-background/60 rounded-xl p-3 font-mono text-xs max-h-48 overflow-y-auto space-y-0.5 border border-primary/[0.06]"
                   >
                     {logs.map((log, i) => (
                       <motion.div key={i} initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} className="text-muted-foreground">
-                        <span className="text-foreground/30">[{i + 1}]</span> {log}
+                        <span className="text-primary/30">[{i + 1}]</span> {log}
                       </motion.div>
                     ))}
                   </motion.div>
