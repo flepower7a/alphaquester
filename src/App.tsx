@@ -10,6 +10,7 @@ import Verification from "./pages/Verification";
 import AdminCodes from "./pages/AdminCodes";
 import Dashboard from "./pages/Dashboard";
 import QuestSolver from "./pages/QuestSolver";
+import BadgesPage from "./pages/BadgesPage";
 import QuestHistory from "./pages/QuestHistory";
 import StatsPage from "./pages/StatsPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -105,6 +106,7 @@ const App = () => (
             <Route path="/admin/codes" element={<AdminRoute><AdminCodes /></AdminRoute>} />
             <Route path="/dashboard" element={<PremiumRoute><DashboardLayout><Dashboard /></DashboardLayout></PremiumRoute>} />
             <Route path="/dashboard/solver" element={<PremiumRoute><DashboardLayout><QuestSolver /></DashboardLayout></PremiumRoute>} />
+            <Route path="/dashboard/badges" element={<PremiumRoute><DashboardLayout><BadgesPage /></DashboardLayout></PremiumRoute>} />
             <Route path="/dashboard/history" element={<PremiumRoute><DashboardLayout><QuestHistory /></DashboardLayout></PremiumRoute>} />
             <Route path="/dashboard/stats" element={<PremiumRoute><DashboardLayout><StatsPage /></DashboardLayout></PremiumRoute>} />
             <Route path="/dashboard/settings" element={<PremiumRoute><DashboardLayout><SettingsPage /></DashboardLayout></PremiumRoute>} />

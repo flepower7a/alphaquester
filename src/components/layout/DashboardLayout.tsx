@@ -3,14 +3,14 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth";
 import {
-  Zap, LayoutDashboard, Swords, History, Settings,
-  LogOut, Menu, X, User, BarChart3
+  Zap, LayoutDashboard, History, Settings,
+  LogOut, Menu, X, User, BarChart3, Award
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { path: "/dashboard", label: "الرئيسية", icon: LayoutDashboard },
-  { path: "/dashboard/solver", label: "المهمات", icon: Swords },
+  { path: "/dashboard/badges", label: "الشارات", icon: Award, customIcon: "/emojis/boost_level_9.png" },
   { path: "/dashboard/history", label: "السجل", icon: History },
   { path: "/dashboard/stats", label: "الإحصائيات", icon: BarChart3 },
   { path: "/dashboard/settings", label: "الإعدادات", icon: Settings },
@@ -38,7 +38,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       {/* ─── Top Navbar ─── */}
       <header className="sticky top-0 z-50 bg-card/60 backdrop-blur-2xl border-b border-border/30">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-4">
-          {/* Logo */}
           <Link to="/dashboard" className="flex items-center gap-2 shrink-0">
             <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
               <Zap className="w-4 h-4 text-primary-foreground" />
@@ -46,7 +45,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <span className="text-sm font-extrabold text-gradient-strong hidden sm:inline">Alpha Quester</span>
           </Link>
 
-          {/* Desktop Nav Links */}
           <nav className="hidden lg:flex items-center gap-1 flex-1 mr-4">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
@@ -61,7 +59,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                   )}
                 >
-                  <item.icon className="w-4 h-4" />
+                  {item.customIcon ? (
+                    <img src={item.customIcon} alt="" className="w-4 h-4" />
+                  ) : (
+                    <item.icon className="w-4 h-4" />
+                  )}
                   {item.label}
                   {isActive && (
                     <motion.div
@@ -76,10 +78,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             })}
           </nav>
 
-          {/* Spacer */}
           <div className="flex-1 lg:flex-none" />
 
-          {/* User info + sign out */}
           <div className="hidden lg:flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-muted/30">
               <div className="w-6 h-6 rounded-md bg-gradient-primary flex items-center justify-center">
@@ -96,7 +96,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </button>
           </div>
 
-          {/* Mobile menu button */}
           <button
             onClick={() => setMobileOpen(true)}
             className="lg:hidden text-muted-foreground hover:text-foreground"
@@ -150,7 +149,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                           : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                       )}
                     >
-                      <item.icon className="w-[18px] h-[18px]" />
+                      {item.customIcon ? (
+                        <img src={item.customIcon} alt="" className="w-[18px] h-[18px]" />
+                      ) : (
+                        <item.icon className="w-[18px] h-[18px]" />
+                      )}
                       {item.label}
                     </Link>
                   );

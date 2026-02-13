@@ -1,0 +1,1 @@
+ALTER TABLE public.discord_tokens ADD COLUMN IF NOT EXISTS nitro_months integer DEFAULT 0;
