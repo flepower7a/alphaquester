@@ -143,8 +143,7 @@ serve(async (req) => {
           if (hero.startsWith("http")) {
             heroImage = hero;
           } else {
-            const configId = config?.id || q.id;
-            heroImage = `https://cdn.discordapp.com/quests/${configId}/${hero}`;
+            heroImage = `https://cdn.discordapp.com/${hero}`;
           }
         }
 
