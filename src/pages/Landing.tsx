@@ -83,7 +83,7 @@ export default function Landing() {
                   <span className="text-gradient-strong">الفا كويستر</span>
                 </h1>
                 <p className="text-base md:text-lg text-muted-foreground max-w-lg mb-8 leading-relaxed">
-                  حل مهمات Discord تلقائياً. أدخل التوكن، اختر المهمة، وابدأ — كل شيء بأمان وسرعة.
+                  حل مهمات Discord تلقائياً. اختر المهمة، وابدأ — كل شيء بأمان وسرعة.
                 </p>
                 <Link to="/auth">
                   <Button size="lg" className="rounded-xl bg-gradient-primary text-white h-12 px-8 text-sm font-bold glow-primary hover:opacity-90 transition-all">
@@ -112,7 +112,7 @@ export default function Landing() {
                     <stat.icon className="w-4.5 h-4.5 text-foreground/70" />
                   </div>
                   <div>
-                    <p className="text-2xl font-black text-foreground">{stat.value.toLocaleString("ar-SA")}</p>
+                    <p className="text-2xl font-black text-foreground">{stat.value.toLocaleString("en-US")}</p>
                     <p className="text-[11px] text-muted-foreground font-medium">{stat.label}</p>
                   </div>
                 </motion.div>
