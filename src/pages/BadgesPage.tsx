@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { RefreshCw } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { boostLevels, boostLevelImages } from "@/lib/emojis";
 
 const nitroLevels = [
@@ -52,11 +55,14 @@ function BadgeProgress({
   const maxMonths = levels[levels.length - 1].months;
   const progressPercent = maxMonths > 0 ? Math.min((currentMonths / maxMonths) * 100, 100) : 0;
 
+  // Display levels from highest (left) to lowest (right) for RTL layout
+  const reversedLevels = [...levels].reverse();
+
   return (
     <div className="mt-6">
-      {/* Icons row */}
+      {/* Icons row - highest on left, lowest on right */}
       <div className="flex items-end justify-between mb-2 px-1">
-        {levels.map((lvl, i) => {
+        {reversedLevels.map((lvl, i) => {
           const isReached = currentMonths >= lvl.months;
           return (
             <div key={i} className="flex flex-col items-center gap-1">
@@ -76,21 +82,22 @@ function BadgeProgress({
         })}
       </div>
 
-      {/* Progress bar */}
-      <div className="relative h-2.5 rounded-full bg-muted/50 overflow-hidden">
+      {/* Progress bar - fills from RIGHT to LEFT (RTL) */}
+      <div className="relative h-2.5 rounded-full bg-muted/50 overflow-hidden" dir="ltr">
         <motion.div
-          className={`absolute inset-y-0 left-0 rounded-full ${type === "boost" ? "bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400" : "bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"}`}
+          className={`absolute inset-y-0 right-0 rounded-full ${type === "boost" ? "bg-gradient-to-l from-purple-500 via-pink-500 to-rose-400" : "bg-gradient-to-l from-blue-500 via-indigo-500 to-purple-500"}`}
           initial={{ width: "0%" }}
           animate={{ width: `${progressPercent}%` }}
           transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
         />
-        {/* Glow dot at the end */}
-        <motion.div
-          className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full ${type === "boost" ? "bg-pink-400 shadow-[0_0_12px_hsl(330,80%,60%)]" : "bg-indigo-400 shadow-[0_0_12px_hsl(250,80%,60%)]"}`}
-          initial={{ left: "0%" }}
-          animate={{ left: `${Math.max(progressPercent - 1, 0)}%` }}
-          transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
-        />
+        {progressPercent > 0 && (
+          <motion.div
+            className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full ${type === "boost" ? "bg-pink-400 shadow-[0_0_12px_hsl(330,80%,60%)]" : "bg-indigo-400 shadow-[0_0_12px_hsl(250,80%,60%)]"}`}
+            initial={{ right: "0%" }}
+            animate={{ right: `${Math.max(progressPercent - 1.5, 0)}%` }}
+            transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
+          />
+        )}
       </div>
     </div>
   );
@@ -100,26 +107,48 @@ export default function BadgesPage() {
   const { user } = useAuth();
   const [tokens, setTokens] = useState<TokenRecord[]>([]);
   const [selectedToken, setSelectedToken] = useState<TokenRecord | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
+  const loadTokens = async () => {
     if (!user) return;
-    supabase
+    const { data } = await supabase
       .from("discord_tokens")
       .select("id, discord_username, display_name, avatar_url, boost_months, nitro_months, nitro_type")
       .eq("user_id", user.id)
-      .eq("is_active", true)
-      .then(({ data }) => {
-        if (data && data.length > 0) {
-          const mapped = data.map(d => ({
-            ...d,
-            boost_months: d.boost_months || 0,
-            nitro_months: (d as any).nitro_months || 0,
-          }));
-          setTokens(mapped);
-          setSelectedToken(mapped[0]);
-        }
+      .eq("is_active", true);
+    if (data && data.length > 0) {
+      const mapped = data.map(d => ({
+        ...d,
+        boost_months: d.boost_months || 0,
+        nitro_months: (d as any).nitro_months || 0,
+      }));
+      setTokens(mapped);
+      if (!selectedToken || !mapped.find(t => t.id === selectedToken.id)) {
+        setSelectedToken(mapped[0]);
+      } else {
+        setSelectedToken(mapped.find(t => t.id === selectedToken.id)!);
+      }
+    }
+  };
+
+  useEffect(() => { loadTokens(); }, [user]);
+
+  const refreshBadges = async () => {
+    if (!selectedToken) return;
+    setRefreshing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("discord-user-info", {
+        body: { action: "refresh_badges", tokenId: selectedToken.id },
       });
-  }, [user]);
+      if (error) throw error;
+      toast.success(`تم التحديث — بوست: ${data.boost_months} شهر، نيترو: ${data.nitro_months} شهر`);
+      await loadTokens();
+    } catch (err: any) {
+      toast.error(err.message || "خطأ في التحديث");
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const boostMonths = selectedToken?.boost_months || 0;
   const nitroMonths = selectedToken?.nitro_months || 0;
@@ -134,12 +163,21 @@ export default function BadgesPage() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-xl font-extrabold flex items-center gap-2">
-          <img src="/emojis/boost_level_9.png" alt="" className="w-7 h-7" />
-          الشارات
-        </h1>
-        <p className="text-xs text-muted-foreground mt-1">شارات البوست والنيترو لحسابك</p>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-extrabold flex items-center gap-2">
+            <img src="/emojis/boost_level_9.png" alt="" className="w-7 h-7" />
+            الشارات
+          </h1>
+          <p className="text-xs text-muted-foreground mt-1">شارات البوست والنيترو لحسابك</p>
+        </div>
+        {selectedToken && (
+          <Button onClick={refreshBadges} disabled={refreshing} size="sm"
+            className="rounded-lg bg-primary/10 text-primary hover:bg-primary/15 text-[10px] h-7 px-2.5">
+            <RefreshCw className={`w-3 h-3 ml-1 ${refreshing ? "animate-spin" : ""}`} />
+            تحديث
+          </Button>
+        )}
       </motion.div>
 
       {/* Token selector */}
@@ -170,12 +208,8 @@ export default function BadgesPage() {
       ) : (
         <div className="space-y-5">
           {/* ─── Boost Badge ─── */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="rounded-2xl bg-card/60 border border-border/20 p-5 sm:p-6"
-          >
+          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+            className="rounded-2xl bg-card/60 border border-border/20 p-5 sm:p-6">
             <div className="flex items-center gap-3 mb-4">
               <img src={boostLevelImages[boostInfo.current.level]} alt="" className="w-10 h-10" />
               <div>
@@ -208,12 +242,8 @@ export default function BadgesPage() {
           </motion.div>
 
           {/* ─── Nitro Badge ─── */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="rounded-2xl bg-card/60 border border-border/20 p-5 sm:p-6"
-          >
+          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+            className="rounded-2xl bg-card/60 border border-border/20 p-5 sm:p-6">
             <div className="flex items-center gap-3 mb-4">
               <img src={nitroInfo.current.image} alt="" className="w-10 h-10" />
               <div>
