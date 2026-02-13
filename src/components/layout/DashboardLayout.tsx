@@ -13,7 +13,6 @@ const navItems = [
   { path: "/dashboard/badges", label: "الشارات", icon: Award, customIcon: "/emojis/boost_level_9.png" },
   { path: "/dashboard/history", label: "السجل", icon: History },
   { path: "/dashboard/stats", label: "الإحصائيات", icon: BarChart3 },
-  { path: "/dashboard/settings", label: "الإعدادات", icon: Settings },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -42,7 +41,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
               <Zap className="w-4 h-4 text-primary-foreground" />
             </div>
-            <span className="text-sm font-extrabold text-gradient-strong hidden sm:inline">Alpha Quester</span>
+            <span className="text-sm font-extrabold text-foreground/90 hidden sm:inline">Alpha Quester</span>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-1 flex-1 mr-4">
@@ -128,7 +127,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
                     <Zap className="w-4 h-4 text-primary-foreground" />
                   </div>
-                  <span className="text-sm font-extrabold text-gradient-strong">Alpha Quester</span>
+                  <span className="text-sm font-extrabold text-foreground/90">Alpha Quester</span>
                 </div>
                 <button onClick={() => setMobileOpen(false)} className="text-muted-foreground hover:text-foreground">
                   <X className="w-5 h-5" />
