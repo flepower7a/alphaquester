@@ -46,7 +46,7 @@ export default function Landing() {
             <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
               <Zap className="w-4 h-4 text-white" />
             </div>
-            <span className="text-sm font-extrabold text-gradient-strong">Alpha Quester</span>
+            <span className="text-sm font-extrabold text-foreground/90">Alpha Quester</span>
           </div>
           <div className="flex items-center gap-2">
             <Link to="/auth">
