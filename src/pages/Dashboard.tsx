@@ -449,88 +449,93 @@ export default function Dashboard() {
             </div>
 
             {/* Quests Grid — smaller cards */}
+            {quests.length === 0 ? (
+              <div className="text-center py-10 text-muted-foreground">
+                <img src={statusIcons.quest} alt="" className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                <p className="text-xs">اضغط "جلب" لعرض المهمات المتاحة</p>
+              </div>
+            ) : (
             <AnimatePresence>
-              {quests.length > 0 && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-4">
-                  {quests.map((quest, i) => {
-                    const rewardIcon = getRewardIcon(quest.reward_name);
-                    const alreadyCompleted = quest.completed || isQuestCompleted(quest.id);
-                    return (
-                      <motion.div key={quest.id} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.03 }}
-                        onClick={() => {
-                          if (isActive) return;
-                          setSelectedQuest(quest);
-                          setLogs([]);
-                          setSessionStatus("idle");
-                          setSessionId(null);
-                          setLiveProgress(null);
-                        }}
-                        className={`rounded-xl overflow-hidden cursor-pointer transition-all duration-200 border ${
-                          selectedQuest?.id === quest.id ? "border-primary/30 bg-primary/[0.03]" : "border-border/15 hover:border-border/30"
-                        } ${alreadyCompleted ? "opacity-50" : ""}`}>
-                        {quest.hero_image && (
-                          <div className="h-24 overflow-hidden relative">
-                            <img src={quest.hero_image} alt={quest.name} className="w-full h-full object-cover"
-                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                            {alreadyCompleted && (
-                              <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-success/10 text-success text-[10px] font-semibold">
-                                  <CheckCircle className="w-3 h-3" />مكتملة
-                                </div>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-4">
+                {quests.map((quest, i) => {
+                  const rewardIcon = getRewardIcon(quest.reward_name);
+                  const alreadyCompleted = quest.completed || isQuestCompleted(quest.id);
+                  return (
+                    <motion.div key={quest.id} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.03 }}
+                      onClick={() => {
+                        if (isActive) return;
+                        setSelectedQuest(quest);
+                        setLogs([]);
+                        setSessionStatus("idle");
+                        setSessionId(null);
+                        setLiveProgress(null);
+                      }}
+                      className={`rounded-xl overflow-hidden cursor-pointer transition-all duration-200 border ${
+                        selectedQuest?.id === quest.id ? "border-primary/30 bg-primary/[0.03]" : "border-border/15 hover:border-border/30"
+                      } ${alreadyCompleted ? "opacity-50" : ""}`}>
+                      {quest.hero_image && (
+                        <div className="h-24 overflow-hidden relative">
+                          <img src={quest.hero_image} alt={quest.name} className="w-full h-full object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                          {alreadyCompleted && (
+                            <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
+                              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-success/10 text-success text-[10px] font-semibold">
+                                <CheckCircle className="w-3 h-3" />مكتملة
                               </div>
-                            )}
-                          </div>
-                        )}
-                        <div className="p-3">
-                          <div className="flex items-start justify-between mb-1">
-                            <h3 className="font-bold text-foreground text-xs leading-tight">{quest.name}</h3>
-                            {alreadyCompleted ? (
-                              <CheckCircle className="w-4 h-4 text-success shrink-0" />
-                            ) : quest.supported ? (
-                              <img src="/emojis/quest.png" alt="" className="w-4 h-4 shrink-0 opacity-50" />
-                            ) : (
-                              <XCircle className="w-4 h-4 text-muted-foreground shrink-0" />
-                            )}
-                          </div>
-                          <p className="text-[10px] text-muted-foreground">{quest.game_title}</p>
-                          <div className="flex items-center gap-1 mt-1">
-                            {rewardIcon && <img src={rewardIcon} alt="" className="w-3.5 h-3.5" />}
-                            <p className="text-[10px] text-primary/50 font-medium">{quest.reward_name}</p>
-                          </div>
-
-                          {quest.tasks?.map(task => {
-                            const taskIcon = questTypeIcons[task.id];
-                            return (
-                              <div key={task.id} className="mt-2">
-                                <div className="flex justify-between items-center text-[10px] text-muted-foreground mb-0.5">
-                                  <span className="flex items-center gap-1">
-                                    {taskIcon && <img src={taskIcon} alt="" className="w-3 h-3" />}
-                                    {task.id.replace(/_/g, " ")}
-                                  </span>
-                                  <span>{task.percent}%</span>
-                                </div>
-                                <div className="h-1 rounded-full bg-border/30 overflow-hidden">
-                                  <motion.div initial={{ width: 0 }} animate={{ width: `${task.percent}%` }}
-                                    className="h-full rounded-full bg-primary/60" transition={{ duration: 0.6 }} />
-                                </div>
-                              </div>
-                            );
-                          })}
-
-                          {quest.expires_at && (
-                            <p className="text-[9px] text-muted-foreground mt-1.5 flex items-center gap-0.5">
-                              <Clock className="w-2.5 h-2.5" />
-                              {new Date(quest.expires_at).toLocaleDateString("ar")}
-                            </p>
+                            </div>
                           )}
                         </div>
-                      </motion.div>
-                    );
-                  })}
-                </motion.div>
-              )}
+                      )}
+                      <div className="p-3">
+                        <div className="flex items-start justify-between mb-1">
+                          <h3 className="font-bold text-foreground text-xs leading-tight">{quest.name}</h3>
+                          {alreadyCompleted ? (
+                            <CheckCircle className="w-4 h-4 text-success shrink-0" />
+                          ) : quest.supported ? (
+                            <img src="/emojis/quest.png" alt="" className="w-4 h-4 shrink-0 opacity-50" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-muted-foreground shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">{quest.game_title}</p>
+                        <div className="flex items-center gap-1 mt-1">
+                          {rewardIcon && <img src={rewardIcon} alt="" className="w-3.5 h-3.5" />}
+                          <p className="text-[10px] text-primary/50 font-medium">{quest.reward_name}</p>
+                        </div>
+
+                        {quest.tasks?.map(task => {
+                          const taskIcon = questTypeIcons[task.id];
+                          return (
+                            <div key={task.id} className="mt-2">
+                              <div className="flex justify-between items-center text-[10px] text-muted-foreground mb-0.5">
+                                <span className="flex items-center gap-1">
+                                  {taskIcon && <img src={taskIcon} alt="" className="w-3 h-3" />}
+                                  {task.id.replace(/_/g, " ")}
+                                </span>
+                                <span>{task.percent}%</span>
+                              </div>
+                              <div className="h-1 rounded-full bg-border/30 overflow-hidden">
+                                <motion.div initial={{ width: 0 }} animate={{ width: `${task.percent}%` }}
+                                  className="h-full rounded-full bg-primary/60" transition={{ duration: 0.6 }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {quest.expires_at && (
+                          <p className="text-[9px] text-muted-foreground mt-1.5 flex items-center gap-0.5">
+                            <Clock className="w-2.5 h-2.5" />
+                            {new Date(quest.expires_at).toLocaleDateString("ar")}
+                          </p>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
             </AnimatePresence>
+            )}
 
             {/* Controls */}
             {selectedQuest && (
