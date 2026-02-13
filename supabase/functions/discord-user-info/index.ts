@@ -187,6 +187,47 @@ serve(async (req) => {
       });
     }
 
+    // Action: refresh_badges - re-fetch boost/nitro months from Discord
+    if (action === "refresh_badges" && tokenId) {
+      const { data: tokenRecord } = await supabase
+        .from("discord_tokens")
+        .select("encrypted_token, discord_user_id")
+        .eq("id", tokenId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!tokenRecord?.encrypted_token || !tokenRecord?.discord_user_id) {
+        return new Response(JSON.stringify({ error: "Token not found" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      let boostMonths = 0;
+      let nitroMonths = 0;
+      try {
+        const profileRes = await fetch(`${DISCORD_API}/users/${tokenRecord.discord_user_id}/profile`, {
+          headers: getDiscordHeaders(tokenRecord.encrypted_token),
+        });
+        if (profileRes.ok) {
+          const profile = await profileRes.json();
+          if (profile.premium_guild_since) {
+            const boostDate = new Date(profile.premium_guild_since);
+            boostMonths = Math.floor((Date.now() - boostDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
+          }
+          if (profile.premium_since) {
+            const nitroDate = new Date(profile.premium_since);
+            nitroMonths = Math.floor((Date.now() - nitroDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
+          }
+        }
+      } catch { /* ignore */ }
+
+      await supabase.from("discord_tokens").update({ boost_months: boostMonths, nitro_months: nitroMonths }).eq("id", tokenId);
+
+      return new Response(JSON.stringify({ boost_months: boostMonths, nitro_months: nitroMonths }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Action: delete token
     if (action === "delete" && tokenId) {
       await supabase.from("discord_tokens").delete().eq("id", tokenId).eq("user_id", user.id);
