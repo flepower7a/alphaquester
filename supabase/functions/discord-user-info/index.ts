@@ -167,25 +167,7 @@ serve(async (req) => {
       });
     }
 
-    // Action: get token for quest operations (returns actual token server-side only)
-    if (action === "get_token" && tokenId) {
-      const { data: tokenRecord } = await supabase
-        .from("discord_tokens")
-        .select("encrypted_token")
-        .eq("id", tokenId)
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (!tokenRecord?.encrypted_token) {
-        return new Response(JSON.stringify({ error: "Token not found" }), {
-          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      return new Response(JSON.stringify({ token: tokenRecord.encrypted_token }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Action: get_token is removed for security - tokens are now fetched server-side only by edge functions
 
     // Action: refresh_badges - re-fetch boost/nitro months from Discord
     if (action === "refresh_badges" && tokenId) {

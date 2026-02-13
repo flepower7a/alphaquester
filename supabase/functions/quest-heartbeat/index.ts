@@ -61,15 +61,15 @@ serve(async (req) => {
       });
     }
 
-    const { sessionId, token: discordToken } = await req.json();
+    const { sessionId } = await req.json();
 
-    if (!sessionId || !discordToken) {
-      return new Response(JSON.stringify({ error: "Missing sessionId or token" }), {
+    if (!sessionId) {
+      return new Response(JSON.stringify({ error: "Missing sessionId" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Get session
+    // Get session (includes token_id)
     const { data: session, error: sessionError } = await supabase
       .from("quest_sessions")
       .select("*")
@@ -97,6 +97,27 @@ serve(async (req) => {
       });
     }
 
+    // Fetch the discord token server-side from token_id
+    if (!session.token_id) {
+      return new Response(JSON.stringify({ error: "No token linked to session" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: tokenRecord } = await supabase
+      .from("discord_tokens")
+      .select("encrypted_token")
+      .eq("id", session.token_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!tokenRecord?.encrypted_token) {
+      return new Response(JSON.stringify({ error: "Token not found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const discordToken = tokenRecord.encrypted_token;
     const method = session.method;
     const target = session.target || 0;
     let progress = session.progress || 0;
@@ -152,7 +173,6 @@ serve(async (req) => {
       });
 
       if (completed || progress >= target) {
-        // Update profile
         const { data: profile } = await supabase
           .from("profiles")
           .select("total_solved_quests")
