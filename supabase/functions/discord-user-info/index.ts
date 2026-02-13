@@ -65,8 +65,9 @@ serve(async (req) => {
 
       const displayName = discordUser.global_name || discordUser.username;
 
-      // Try to get boost info
+      // Try to get boost and nitro info
       let boostMonths = 0;
+      let nitroMonths = 0;
       try {
         const profileRes = await fetch(`${DISCORD_API}/users/${discordUser.id}/profile`, {
           headers: getDiscordHeaders(token),
@@ -77,6 +78,11 @@ serve(async (req) => {
             const boostDate = new Date(profile.premium_guild_since);
             const now = new Date();
             boostMonths = Math.floor((now.getTime() - boostDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
+          }
+          if (profile.premium_since) {
+            const nitroDate = new Date(profile.premium_since);
+            const now = new Date();
+            nitroMonths = Math.floor((now.getTime() - nitroDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
           }
         }
       } catch { /* ignore */ }
@@ -107,6 +113,7 @@ serve(async (req) => {
             display_name: displayName,
             avatar_url: avatarUrl,
             boost_months: boostMonths,
+            nitro_months: nitroMonths,
             nitro_type: discordUser.premium_type ? String(discordUser.premium_type) : null,
             is_active: true,
             last_used_at: new Date().toISOString(),
@@ -128,6 +135,7 @@ serve(async (req) => {
             display_name: displayName,
             avatar_url: avatarUrl,
             boost_months: boostMonths,
+            nitro_months: nitroMonths,
             nitro_type: discordUser.premium_type ? String(discordUser.premium_type) : null,
           })
           .select()

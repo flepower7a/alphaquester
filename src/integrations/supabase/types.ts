@@ -26,6 +26,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           last_used_at: string | null
+          nitro_months: number | null
           nitro_type: string | null
           token_hash: string
           user_id: string
@@ -41,6 +42,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           last_used_at?: string | null
+          nitro_months?: number | null
           nitro_type?: string | null
           token_hash: string
           user_id: string
@@ -56,6 +58,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           last_used_at?: string | null
+          nitro_months?: number | null
           nitro_type?: string | null
           token_hash?: string
           user_id?: string
