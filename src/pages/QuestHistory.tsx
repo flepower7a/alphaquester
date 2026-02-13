@@ -21,85 +21,79 @@ export default function QuestHistory() {
     { value: "all", label: "الكل" },
     { value: "completed", label: "مكتمل" },
     { value: "running", label: "نشط" },
-    { value: "paused", label: "متوقف مؤقتاً" },
+    { value: "paused", label: "موقف" },
     { value: "failed", label: "فشل" },
     { value: "stopped", label: "متوقف" },
   ];
 
   const statusColors: Record<string, string> = {
-    completed: "bg-success/15 text-success border border-success/20",
-    running: "bg-primary/15 text-primary border border-primary/20",
-    failed: "bg-destructive/15 text-destructive border border-destructive/20",
-    stopped: "bg-muted/50 text-muted-foreground border border-border/30",
-    paused: "bg-warning/15 text-warning border border-warning/20",
-    pending: "bg-secondary text-secondary-foreground border border-border/30",
+    completed: "bg-success/10 text-success",
+    running: "bg-primary/10 text-primary",
+    failed: "bg-destructive/10 text-destructive",
+    stopped: "bg-muted text-muted-foreground",
+    paused: "bg-warning/10 text-warning",
+    pending: "bg-muted text-muted-foreground",
   };
-
   const statusLabels: Record<string, string> = {
-    completed: "مكتمل", running: "قيد التشغيل", failed: "فشل",
-    stopped: "متوقف", paused: "متوقف مؤقتاً", pending: "معلق",
+    completed: "مكتمل", running: "نشط", failed: "فشل",
+    stopped: "متوقف", paused: "موقف", pending: "معلق",
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-bold flex items-center gap-3">
-          <motion.div className="p-2.5 rounded-xl bg-gradient-primary glow-sm" whileHover={{ scale: 1.05 }}>
-            <History className="w-6 h-6 text-white" />
-          </motion.div>
-          سجل المهمات
-        </h1>
-      </motion.div>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-black text-foreground">سجل المهمات</h1>
+      </div>
 
-      {/* Filters */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex gap-2 flex-wrap">
+      {/* Filters — pill style */}
+      <div className="flex gap-1.5 flex-wrap">
         {filters.map((f) => (
           <button key={f.value} onClick={() => setFilter(f.value)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200 ${
               filter === f.value
-                ? "bg-gradient-primary text-white glow-sm"
-                : "bg-secondary/30 text-muted-foreground hover:text-foreground hover:bg-secondary/50 border border-primary/[0.08]"
+                ? "bg-primary/12 text-primary"
+                : "bg-card/50 text-muted-foreground hover:text-foreground border border-border/15"
             }`}>
             {f.label}
           </button>
         ))}
-      </motion.div>
+      </div>
 
-      {/* Sessions */}
+      {/* Sessions — table-like rows */}
       {sessions.length === 0 ? (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card-modern rounded-2xl p-12 text-center">
-          <History className="w-16 h-16 mx-auto text-primary/20 mb-4" />
-          <p className="text-muted-foreground text-lg">لا توجد جلسات</p>
-        </motion.div>
+        <div className="rounded-2xl bg-card/30 border border-border/15 p-10 text-center">
+          <History className="w-10 h-10 mx-auto text-muted-foreground/20 mb-3" />
+          <p className="text-sm text-muted-foreground">لا توجد جلسات</p>
+        </div>
       ) : (
-        <div className="space-y-3">
+        <div className="rounded-2xl bg-card/30 border border-border/15 overflow-hidden divide-y divide-border/10">
           {sessions.map((session, i) => (
-            <motion.div key={session.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-              className="card-modern rounded-2xl p-5">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-xl bg-gradient-accent flex items-center justify-center shrink-0">
-                  <img src="/emojis/quest.png" alt="" className="w-8 h-8" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground truncate">{session.quest_name || session.quest_id}</h3>
-                  <p className="text-sm text-muted-foreground">{session.game_title}</p>
-                  <p className="text-sm text-primary/60">{session.reward_name}</p>
-                </div>
-                <div className="text-right space-y-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium inline-block ${statusColors[session.status]}`}>
-                    {statusLabels[session.status]}
-                  </span>
-                  {session.target > 0 && (
-                    <div>
-                      <div className="text-xs text-muted-foreground mb-1">{Math.round((session.progress / session.target) * 100)}%</div>
-                      <div className="w-24 h-1.5 rounded-full bg-secondary/50 overflow-hidden">
-                        <div className="h-full rounded-full bg-gradient-primary transition-all"
-                          style={{ width: `${Math.min(100, (session.progress / session.target) * 100)}%` }} />
-                      </div>
+            <motion.div key={session.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
+              className="flex items-center gap-3 p-3 hover:bg-card/50 transition-colors">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/6 to-accent/4 flex items-center justify-center shrink-0">
+                <img src="/emojis/quest.png" alt="" className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-foreground truncate">{session.quest_name || session.quest_id}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{session.game_title} · {session.reward_name}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                {session.target > 0 && (
+                  <div className="hidden sm:block w-20">
+                    <div className="h-1 rounded-full bg-border/20 overflow-hidden">
+                      <div className="h-full rounded-full bg-primary/50 transition-all"
+                        style={{ width: `${Math.min(100, (session.progress / session.target) * 100)}%` }} />
                     </div>
-                  )}
-                  <p className="text-xs text-muted-foreground">{new Date(session.created_at).toLocaleDateString("ar")}</p>
-                </div>
+                    <p className="text-[9px] text-muted-foreground text-center mt-0.5">{Math.round((session.progress / session.target) * 100)}%</p>
+                  </div>
+                )}
+                <span className={`px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap ${statusColors[session.status]}`}>
+                  {statusLabels[session.status]}
+                </span>
+                <span className="text-[9px] text-muted-foreground hidden md:block whitespace-nowrap">
+                  {new Date(session.created_at).toLocaleDateString("ar")}
+                </span>
               </div>
             </motion.div>
           ))}

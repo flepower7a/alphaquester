@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart3, Trophy, Swords, TrendingUp, Calendar, Target } from "lucide-react";
-import { statusIcons } from "@/lib/emojis";
 
 export default function StatsPage() {
   const { user } = useAuth();
@@ -34,15 +33,6 @@ export default function StatsPage() {
     }
   };
 
-  const statCards = [
-    { label: "إجمالي المهمات", value: stats.total, icon: Target, color: "from-primary to-accent" },
-    { label: "مكتملة", value: stats.completed, icon: Trophy, color: "from-success to-[hsl(160_84%_30%)]" },
-    { label: "فاشلة", value: stats.failed, icon: Swords, color: "from-destructive to-[hsl(0_72%_40%)]" },
-    { label: "نسبة النجاح", value: `${stats.successRate}%`, icon: TrendingUp, color: "from-primary to-accent" },
-    { label: "نشطة حالياً", value: stats.running, icon: BarChart3, color: "from-warning to-[hsl(38_92%_40%)]" },
-    { label: "متوسط الإكمال", value: stats.avgCompletionTime, icon: Calendar, color: "from-accent to-primary" },
-  ];
-
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const date = new Date();
     date.setDate(date.getDate() - (6 - i));
@@ -54,67 +44,61 @@ export default function StatsPage() {
   const maxCount = Math.max(...last7Days.map(d => d.count), 1);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-bold flex items-center gap-3">
-          <motion.div className="p-2.5 rounded-xl bg-gradient-primary glow-sm" whileHover={{ scale: 1.05 }}>
-            <BarChart3 className="w-6 h-6 text-white" />
-          </motion.div>
-          الإحصائيات
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">نظرة شاملة على أدائك</p>
-      </motion.div>
+    <div className="space-y-4">
+      <h1 className="text-lg font-black text-foreground">الإحصائيات</h1>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        {statCards.map((s, i) => (
-          <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className="card-modern rounded-2xl p-5 group">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
-                <p className="text-2xl font-bold text-foreground">{s.value}</p>
-              </div>
-              <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${s.color} flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity`}>
-                <s.icon className="w-5 h-5 text-white" />
-              </div>
+      {/* Bento stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+        {[
+          { label: "إجمالي", value: stats.total, icon: Target },
+          { label: "مكتملة", value: stats.completed, icon: Trophy },
+          { label: "فاشلة", value: stats.failed, icon: Swords },
+          { label: "نسبة النجاح", value: `${stats.successRate}%`, icon: TrendingUp },
+          { label: "نشطة", value: stats.running, icon: BarChart3 },
+          { label: "متوسط الإكمال", value: stats.avgCompletionTime, icon: Calendar },
+        ].map((s, i) => (
+          <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+            className="rounded-2xl bg-card/50 border border-border/20 p-4">
+            <div className="flex items-center justify-between mb-1">
+              <s.icon className="w-3.5 h-3.5 text-muted-foreground" />
             </div>
+            <p className="text-xl font-black text-foreground">{s.value}</p>
+            <p className="text-[10px] text-muted-foreground font-medium">{s.label}</p>
           </motion.div>
         ))}
       </div>
 
-      {/* Activity Chart */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-        className="card-modern rounded-2xl p-6">
-        <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-primary" />
-          نشاط آخر 7 أيام
+      {/* Activity chart */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+        className="rounded-2xl bg-card/50 border border-border/20 p-5">
+        <h2 className="text-sm font-bold mb-5 flex items-center gap-1.5">
+          <Calendar className="w-3.5 h-3.5 text-primary" />
+          آخر 7 أيام
         </h2>
-        <div className="flex items-end justify-between gap-2 h-40">
+        <div className="flex items-end justify-between gap-2 h-32">
           {last7Days.map((day, i) => (
-            <motion.div key={i} className="flex-1 flex flex-col items-center gap-2"
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + i * 0.05 }}>
-              <div className="w-full flex flex-col items-center gap-1 flex-1 justify-end">
-                <span className="text-xs text-muted-foreground">{day.count}</span>
+            <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
+              <div className="w-full flex flex-col items-center gap-0.5 flex-1 justify-end">
+                <span className="text-[9px] text-muted-foreground">{day.count}</span>
                 <motion.div
-                  className="w-full max-w-8 rounded-lg bg-primary/10 border border-primary/20 relative overflow-hidden"
+                  className="w-full max-w-6 rounded-md bg-primary/8 relative overflow-hidden"
                   initial={{ height: 0 }}
-                  animate={{ height: `${Math.max((day.count / maxCount) * 100, 8)}%` }}
-                  transition={{ duration: 0.6, delay: 0.6 + i * 0.05 }}
+                  animate={{ height: `${Math.max((day.count / maxCount) * 100, 6)}%` }}
+                  transition={{ duration: 0.5, delay: 0.3 + i * 0.04 }}
                 >
                   {day.completed > 0 && (
-                    <div className="absolute bottom-0 w-full bg-gradient-primary rounded-b-lg"
+                    <div className="absolute bottom-0 w-full bg-primary/40 rounded-b-md"
                       style={{ height: `${(day.completed / day.count) * 100}%` }} />
                   )}
                 </motion.div>
               </div>
-              <span className="text-xs text-muted-foreground">{day.date}</span>
-            </motion.div>
+              <span className="text-[9px] text-muted-foreground">{day.date}</span>
+            </div>
           ))}
         </div>
-        <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-primary/10 border border-primary/20" /> إجمالي</span>
-          <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-gradient-primary" /> مكتملة</span>
+        <div className="flex items-center gap-3 mt-3 text-[9px] text-muted-foreground">
+          <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-primary/8" /> إجمالي</span>
+          <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-primary/40" /> مكتملة</span>
         </div>
       </motion.div>
     </div>
