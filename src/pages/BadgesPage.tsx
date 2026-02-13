@@ -52,8 +52,29 @@ function BadgeProgress({
   currentMonths: number;
   type: "boost" | "nitro";
 }) {
-  const maxMonths = levels[levels.length - 1].months;
-  const progressPercent = maxMonths > 0 ? Math.min((currentMonths / maxMonths) * 100, 100) : 0;
+  // Calculate progress based on icon position, not month ratio
+  // Icons are evenly spaced, so we need to find which level the user is at
+  // and interpolate between icon positions
+  const n = levels.length;
+  let progressPercent = 0;
+  if (n > 1) {
+    // Find the index of the current level (highest level where months <= currentMonths)
+    let currentIdx = 0;
+    for (let i = 0; i < n; i++) {
+      if (currentMonths >= levels[i].months) currentIdx = i;
+    }
+    // Find how far between currentIdx and next level
+    const nextIdx = currentIdx + 1;
+    let fraction = 0;
+    if (nextIdx < n) {
+      const range = levels[nextIdx].months - levels[currentIdx].months;
+      if (range > 0) {
+        fraction = Math.min((currentMonths - levels[currentIdx].months) / range, 1);
+      }
+    }
+    // Each icon is at position i/(n-1), progress should reach icon position
+    progressPercent = ((currentIdx + fraction) / (n - 1)) * 100;
+  }
 
   // Display levels from lowest (left) to highest (right)
   const displayLevels = [...levels];
