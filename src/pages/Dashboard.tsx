@@ -8,12 +8,15 @@ import { toast } from "sonner";
 import {
   Key, Search, Swords, Play, Square, RefreshCw, Pause,
   CheckCircle, XCircle, Clock, Shield, RotateCcw,
-  Plus, Trash2, Zap, Trophy, Activity, TrendingUp, User, ArrowRight
+  Plus, Trash2, Zap, Trophy, Activity, TrendingUp, User, ArrowRight, Gift
 } from "lucide-react";
 import {
   questTypeIcons, statusIcons, getBoostImage, getBoostLevel,
   getRewardIcon, boostLevels, boostLevelImages
 } from "@/lib/emojis";
+import ActivityFeed from "@/components/ActivityFeed";
+import CountdownTimer from "@/components/CountdownTimer";
+import { fireQuestComplete } from "@/lib/confetti";
 
 interface TokenRecord {
   id: string;
