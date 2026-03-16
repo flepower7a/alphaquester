@@ -123,7 +123,12 @@ export default function UpdateMePage() {
         return;
       }
       setSettings(prev => prev ? { ...prev, is_enabled: data.is_enabled } : prev);
-      toast.success(data.is_enabled ? "تم التفعيل" : "تم الإيقاف");
+      if (data.is_enabled) {
+        const sent = data.initial_sent || 0;
+        toast.success(sent > 0 ? `تم التفعيل وإرسال ${sent} مهمة` : "تم التفعيل — سيتم إرسال المهمات الجديدة تلقائياً");
+      } else {
+        toast.success("تم الإيقاف");
+      }
     } catch (err: any) {
       toast.error(err.message || "خطأ");
     } finally {
