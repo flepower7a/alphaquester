@@ -8,12 +8,15 @@ import { toast } from "sonner";
 import {
   Key, Search, Swords, Play, Square, RefreshCw, Pause,
   CheckCircle, XCircle, Clock, Shield, RotateCcw,
-  Plus, Trash2, Zap, Trophy, Activity, TrendingUp, User, ArrowRight
+  Plus, Trash2, Zap, Trophy, Activity, TrendingUp, User, ArrowRight, Gift
 } from "lucide-react";
 import {
   questTypeIcons, statusIcons, getBoostImage, getBoostLevel,
   getRewardIcon, boostLevels, boostLevelImages
 } from "@/lib/emojis";
+import ActivityFeed from "@/components/ActivityFeed";
+import CountdownTimer from "@/components/CountdownTimer";
+import { fireQuestComplete } from "@/lib/confetti";
 
 interface TokenRecord {
   id: string;
@@ -215,8 +218,10 @@ export default function Dashboard() {
           stopPolling();
           setSessionStatus(data.status);
           if (data.status === "completed") {
-            toast.success("✅ تم إكمال المهمة بنجاح!");
-            setLogs(prev => [...prev, "✅ تم إكمال المهمة بنجاح!"]);
+            fireQuestComplete();
+            const claimMsg = data.claimed ? " 🎁 وتم استلام المكافأة!" : "";
+            toast.success(`✅ تم إكمال المهمة بنجاح!${claimMsg}`);
+            setLogs(prev => [...prev, `✅ تم إكمال المهمة بنجاح!${claimMsg}`]);
             setTimeout(() => resetQuestState(), 3000);
           } else if (data.status === "failed") {
             setLogs(prev => [...prev, `❌ فشلت المهمة: ${data.error || ""}`]);
@@ -431,6 +436,15 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+
+          {/* Live Activity Feed */}
+          <div className="mt-4 pt-4 border-t border-border/20">
+            <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-primary" />
+              النشاط المباشر
+            </h3>
+            <ActivityFeed />
+          </div>
         </motion.div>
 
         {/* Quest Solver — main area */}
@@ -524,10 +538,9 @@ export default function Dashboard() {
                         })}
 
                         {quest.expires_at && (
-                          <p className="text-[9px] text-muted-foreground mt-1.5 flex items-center gap-0.5">
-                            <Clock className="w-2.5 h-2.5" />
-                            {new Date(quest.expires_at).toLocaleDateString("ar")}
-                          </p>
+                          <div className="mt-1.5">
+                            <CountdownTimer expiresAt={quest.expires_at} compact />
+                          </div>
                         )}
                       </div>
                     </motion.div>
