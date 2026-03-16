@@ -436,6 +436,15 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+
+          {/* Live Activity Feed */}
+          <div className="mt-4 pt-4 border-t border-border/20">
+            <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-primary" />
+              النشاط المباشر
+            </h3>
+            <ActivityFeed />
+          </div>
         </motion.div>
 
         {/* Quest Solver — main area */}
