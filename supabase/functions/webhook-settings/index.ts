@@ -210,7 +210,7 @@ serve(async (req) => {
     if (action === "toggle") {
       const { data: existing } = await supabase
         .from("webhook_settings")
-        .select("id, is_enabled, webhook_url")
+        .select("id, is_enabled, webhook_url, webhook_name, avatar_path")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -229,7 +229,118 @@ serve(async (req) => {
       const newState = !existing.is_enabled;
       await supabase.from("webhook_settings").update({ is_enabled: newState }).eq("id", existing.id);
 
-      return new Response(JSON.stringify({ is_enabled: newState }), {
+      // When enabling, immediately check and send new quests
+      let initialSent = 0;
+      if (newState) {
+        try {
+          // Find user's active token
+          const { data: firstToken } = await supabase
+            .from("discord_tokens")
+            .select("id, encrypted_token")
+            .eq("user_id", user.id)
+            .eq("is_active", true)
+            .limit(1)
+            .maybeSingle();
+
+          if (firstToken?.encrypted_token) {
+            const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+
+            // Fetch quests from Discord
+            const questsRes = await fetch(`${DISCORD_API}/quests/@me`, {
+              headers: getDiscordHeaders(firstToken.encrypted_token),
+            });
+
+            if (questsRes.ok) {
+              const questsData = await questsRes.json();
+              const now = new Date();
+
+              const activeQuests = (questsData.quests || [])
+                .filter((q: any) => {
+                  const expires = q.config?.expires_at;
+                  return !expires || new Date(expires) > now;
+                })
+                .sort((a: any, b: any) => {
+                  const aDate = new Date(a.config?.starts_at || 0).getTime();
+                  const bDate = new Date(b.config?.starts_at || 0).getTime();
+                  return bDate - aDate;
+                });
+
+              const avatarUrl = existing.avatar_path
+                ? `${supabaseUrl}/storage/v1/object/public/webhook-avatars/${existing.avatar_path}`
+                : undefined;
+
+              for (const q of activeQuests) {
+                if (q.user_status?.completed_at) continue;
+                const questId = q.id;
+
+                // Check if already notified
+                const { data: existingNotif } = await supabase
+                  .from("quest_logs")
+                  .select("id")
+                  .eq("user_id", user.id)
+                  .like("message", `%WEBHOOK_SENT:${questId}%`)
+                  .limit(1);
+
+                if (existingNotif && existingNotif.length > 0) continue;
+
+                const { embed, components, questName, gameTitle, heroImage } = buildQuestEmbed(q, supabaseUrl);
+
+                const webhookRes = await fetch(existing.webhook_url!, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    username: existing.webhook_name || "Quest Notifier",
+                    avatar_url: avatarUrl,
+                    embeds: [embed],
+                    components,
+                  }),
+                });
+
+                if (webhookRes.ok) {
+                  initialSent++;
+
+                  const { data: systemSession } = await supabase
+                    .from("quest_sessions")
+                    .select("id")
+                    .eq("user_id", user.id)
+                    .eq("quest_id", `webhook_${questId}`)
+                    .maybeSingle();
+
+                  let sessionId: string;
+                  if (systemSession) {
+                    sessionId = systemSession.id;
+                  } else {
+                    const { data: newSession } = await supabase
+                      .from("quest_sessions")
+                      .insert({
+                        user_id: user.id,
+                        quest_id: `webhook_${questId}`,
+                        status: "completed",
+                        quest_name: questName,
+                        game_title: gameTitle,
+                        hero_image: heroImage,
+                      })
+                      .select("id")
+                      .single();
+                    sessionId = newSession!.id;
+                  }
+
+                  await supabase.from("quest_logs").insert({
+                    session_id: sessionId,
+                    user_id: user.id,
+                    message: `WEBHOOK_SENT:${questId} - ${questName}`,
+                    level: "info",
+                  });
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Initial webhook send error:", e);
+        }
+      }
+
+      return new Response(JSON.stringify({ is_enabled: newState, initial_sent: initialSent }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
