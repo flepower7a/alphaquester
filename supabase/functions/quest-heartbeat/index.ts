@@ -173,6 +173,30 @@ serve(async (req) => {
       });
 
       if (completed || progress >= target) {
+        // Auto-claim reward
+        let claimed = false;
+        try {
+          const rewards = data?.config?.rewards_config?.rewards || [];
+          const reward = rewards[0];
+          if (reward && !reward.claimed) {
+            const claimRes = await fetch(`${DISCORD_API}/quests/${session.quest_id}/claim-reward`, {
+              method: "POST",
+              headers: getDiscordHeaders(discordToken),
+              body: JSON.stringify({}),
+            });
+            if (claimRes.ok) {
+              claimed = true;
+              await supabase.from("quest_logs").insert({
+                session_id: sessionId, user_id: user.id,
+                message: `🎁 تم استلام المكافأة تلقائياً!`,
+                level: "success",
+              });
+            }
+          }
+        } catch (e) {
+          console.error("Auto-claim error:", e);
+        }
+
         const { data: profile } = await supabase
           .from("profiles")
           .select("total_solved_quests")
@@ -184,7 +208,7 @@ serve(async (req) => {
           }).eq("user_id", user.id);
         }
 
-        return new Response(JSON.stringify({ status: "completed", progress, target, done: true }), {
+        return new Response(JSON.stringify({ status: "completed", progress, target, done: true, claimed }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
