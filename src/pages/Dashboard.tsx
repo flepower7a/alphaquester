@@ -218,8 +218,10 @@ export default function Dashboard() {
           stopPolling();
           setSessionStatus(data.status);
           if (data.status === "completed") {
-            toast.success("✅ تم إكمال المهمة بنجاح!");
-            setLogs(prev => [...prev, "✅ تم إكمال المهمة بنجاح!"]);
+            fireQuestComplete();
+            const claimMsg = data.claimed ? " 🎁 وتم استلام المكافأة!" : "";
+            toast.success(`✅ تم إكمال المهمة بنجاح!${claimMsg}`);
+            setLogs(prev => [...prev, `✅ تم إكمال المهمة بنجاح!${claimMsg}`]);
             setTimeout(() => resetQuestState(), 3000);
           } else if (data.status === "failed") {
             setLogs(prev => [...prev, `❌ فشلت المهمة: ${data.error || ""}`]);
