@@ -527,10 +527,9 @@ export default function Dashboard() {
                         })}
 
                         {quest.expires_at && (
-                          <p className="text-[9px] text-muted-foreground mt-1.5 flex items-center gap-0.5">
-                            <Clock className="w-2.5 h-2.5" />
-                            {new Date(quest.expires_at).toLocaleDateString("ar")}
-                          </p>
+                          <div className="mt-1.5">
+                            <CountdownTimer expiresAt={quest.expires_at} compact />
+                          </div>
                         )}
                       </div>
                     </motion.div>
