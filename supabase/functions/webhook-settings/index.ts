@@ -96,8 +96,8 @@ function buildQuestEmbed(q: any, supabaseUrl: string) {
 
   const rewardName = reward?.messages?.name || "No Reward";
   const rewardText = `• ${rewardName} 💎`;
-  const startsStr = startsAt ? formatDate(startsAt) : "N/A";
-  const expiresStr = expiresAt ? formatDate(expiresAt) : "N/A";
+  const startsTs = startsAt ? Math.floor(new Date(startsAt).getTime() / 1000) : null;
+  const expiresTs = expiresAt ? Math.floor(new Date(expiresAt).getTime() / 1000) : null;
 
   const embed: any = {
     title: "New Quest Available!",
@@ -107,8 +107,8 @@ function buildQuestEmbed(q: any, supabaseUrl: string) {
       { name: "**Tasks:**", value: taskLines.join("\n") || "N/A", inline: false },
       { name: "Game Name:", value: gameTitle || "N/A", inline: true },
       { name: "Quest Name:", value: questName, inline: true },
-      { name: "Starts At:", value: `${startsStr} ${startsAt ? getRelative(startsAt, now) : ""}`, inline: false },
-      { name: "Expires At:", value: `${expiresStr} ${expiresAt ? getRelative(expiresAt, now) : ""}`, inline: false },
+      { name: "Starts At:", value: startsTs ? `<t:${startsTs}:F> (<t:${startsTs}:R>)` : "N/A", inline: false },
+      { name: "Expires At:", value: expiresTs ? `<t:${expiresTs}:F> (<t:${expiresTs}:R>)` : "N/A", inline: false },
     ],
     timestamp: now.toISOString(),
     footer: {
