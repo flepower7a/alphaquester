@@ -14,6 +14,7 @@ const navItems = [
   { path: "/dashboard/history", label: "السجل", icon: History },
   { path: "/dashboard/stats", label: "الإحصائيات", icon: BarChart3 },
   { path: "/dashboard/update/me", label: "Update Me", icon: Bell },
+  { path: "/dashboard/settings", label: "الإعدادات", icon: Settings },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
