@@ -226,6 +226,18 @@ export default function Dashboard() {
     };
   }, []);
 
+  const resetQuestState = () => {
+    stopPolling();
+    setSessionId(null);
+    setSessionStatus("idle");
+    setLogs([]);
+    setSelectedQuest(null);
+    setLiveProgress(null);
+    loadStats();
+    loadRecentSessions();
+    loadCompletedQuests();
+  };
+
   const stopPolling = () => {
     workerRef.current?.postMessage({ action: "stop", id: "heartbeat" });
     activeSessionRef.current = null;
