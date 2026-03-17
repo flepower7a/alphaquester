@@ -231,6 +231,14 @@ export default function Dashboard() {
     activeSessionRef.current = null;
   };
 
+  const startPolling = (sid: string) => {
+    stopPolling();
+    activeSessionRef.current = sid;
+    const method = selectedQuest?.method;
+    const delay = (method === "WATCH_VIDEO" || method === "WATCH_VIDEO_ON_MOBILE") ? 6000 : 31000;
+    workerRef.current?.postMessage({ action: "start", id: "heartbeat", interval: delay });
+  };
+
   const startSolving = async () => {
     if (!selectedQuest || !selectedToken) return;
     setSessionStatus("running");
