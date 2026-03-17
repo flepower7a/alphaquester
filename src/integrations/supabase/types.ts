@@ -68,6 +68,7 @@ export type Database = {
       profiles: {
         Row: {
           account_type: string
+          auto_quest_enabled: boolean
           avatar_url: string | null
           created_at: string
           id: string
@@ -79,6 +80,7 @@ export type Database = {
         }
         Insert: {
           account_type?: string
+          auto_quest_enabled?: boolean
           avatar_url?: string | null
           created_at?: string
           id?: string
@@ -90,6 +92,7 @@ export type Database = {
         }
         Update: {
           account_type?: string
+          auto_quest_enabled?: boolean
           avatar_url?: string | null
           created_at?: string
           id?: string
