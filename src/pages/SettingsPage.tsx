@@ -5,8 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { User, Globe, Save, Key, Trash2 } from "lucide-react";
+import { User, Globe, Save, Key, Trash2, Zap, Bot, Info } from "lucide-react";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -14,11 +15,19 @@ export default function SettingsPage() {
   const [language, setLanguage] = useState("ar");
   const [saving, setSaving] = useState(false);
   const [tokens, setTokens] = useState<any[]>([]);
+  const [autoQuest, setAutoQuest] = useState(false);
+  const [togglingAuto, setTogglingAuto] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     supabase.from("profiles").select("*").eq("user_id", user.id).single()
-      .then(({ data }) => { if (data) { setUsername(data.username || ""); setLanguage(data.language || "ar"); } });
+      .then(({ data }) => {
+        if (data) {
+          setUsername(data.username || "");
+          setLanguage(data.language || "ar");
+          setAutoQuest(!!(data as any).auto_quest_enabled);
+        }
+      });
     supabase.from("discord_tokens")
       .select("id, discord_user_id, discord_username, display_name, avatar_url, is_active")
       .eq("user_id", user.id)
@@ -38,12 +47,94 @@ export default function SettingsPage() {
     if (!error) { setTokens(tokens.filter(t => t.id !== id)); toast.success("تم حذف التوكن"); }
   };
 
+  const toggleAutoQuest = async () => {
+    if (!user) return;
+    setTogglingAuto(true);
+    const newVal = !autoQuest;
+    const { error } = await supabase.from("profiles").update({
+      auto_quest_enabled: newVal,
+    } as any).eq("user_id", user.id);
+
+    if (error) {
+      toast.error("خطأ في تغيير الإعداد");
+    } else {
+      setAutoQuest(newVal);
+      if (newVal) {
+        toast.success("🤖 تم تفعيل الحل التلقائي! سيتم فحص المهمات كل ساعة وحلها تلقائياً لجميع التوكنات");
+        // Trigger immediate first check
+        try {
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+          const url = `${supabaseUrl}/functions/v1/auto-quest`;
+          await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({ action: "check" }),
+          });
+        } catch { /* non-blocking */ }
+      } else {
+        toast.success("تم إيقاف الحل التلقائي");
+      }
+    }
+    setTogglingAuto(false);
+  };
+
   return (
     <div className="space-y-4 max-w-2xl">
       <h1 className="text-lg font-black text-foreground">الإعدادات</h1>
 
-      {/* Profile — bento card */}
+      {/* Auto-Quest Toggle — Feature Card */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl bg-gradient-to-br from-primary/8 to-accent/4 border border-primary/20 p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-xl bg-primary/15">
+              <Bot className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-foreground">الحل التلقائي</h2>
+              <p className="text-[10px] text-muted-foreground">يحل المهمات تلقائياً لجميع التوكنات</p>
+            </div>
+          </div>
+          <Switch
+            checked={autoQuest}
+            onCheckedChange={toggleAutoQuest}
+            disabled={togglingAuto || tokens.length === 0}
+          />
+        </div>
+        
+        <div className="rounded-xl bg-background/40 border border-border/15 p-3 space-y-1.5">
+          <div className="flex items-start gap-2">
+            <Info className="w-3.5 h-3.5 text-primary/60 mt-0.5 shrink-0" />
+            <div className="text-[10px] text-muted-foreground space-y-1">
+              <p>• يفحص المهمات الجديدة كل ساعة بتوكن عشوائي</p>
+              <p>• عند وجود مهمة جديدة يبدأ حلها لـ <span className="text-primary font-semibold">جميع التوكنات</span></p>
+              <p>• يرسل heartbeats كل دقيقة ويستلم المكافأة تلقائياً</p>
+              <p>• لا تحتاج تفتح الموقع — كل شيء يعمل بالخلفية</p>
+            </div>
+          </div>
+        </div>
+
+        {tokens.length === 0 && (
+          <p className="text-[10px] text-warning font-medium flex items-center gap-1">
+            <Zap className="w-3 h-3" />
+            أضف توكن واحد على الأقل لتفعيل الحل التلقائي
+          </p>
+        )}
+
+        {autoQuest && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-success/8 border border-success/15">
+            <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+            <p className="text-[10px] text-success font-semibold">نشط — يعمل بالخلفية</p>
+          </div>
+        )}
+      </motion.div>
+
+      {/* Profile — bento card */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
         className="rounded-2xl bg-card/50 border border-border/20 p-5 space-y-4">
         <h2 className="text-sm font-bold flex items-center gap-1.5">
           <User className="w-3.5 h-3.5 text-primary" /> الملف الشخصي
