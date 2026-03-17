@@ -174,65 +174,61 @@ export default function Dashboard() {
     return () => { supabase.removeChannel(channel); };
   }, [sessionId]);
 
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const activeSessionRef = useRef<string | null>(null);
 
+  // Initialize Web Worker for background-safe heartbeats
   useEffect(() => {
-    return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
+    const worker = new Worker("/heartbeat-worker.js");
+    workerRef.current = worker;
+
+    worker.onmessage = async (e) => {
+      if (e.data.type === "tick" && activeSessionRef.current) {
+        try {
+          const { data, error } = await supabase.functions.invoke("quest-heartbeat", {
+            body: { sessionId: activeSessionRef.current },
+          });
+          if (error) throw error;
+
+          if (data?.progress !== undefined) {
+            setLiveProgress({ progress: data.progress, target: data.target });
+            setLogs(prev => [...prev, `📊 التقدم: ${data.progress}/${data.target}`]);
+            setQuests(prev => prev.map(q => {
+              if (q.id !== selectedQuest?.id) return q;
+              return { ...q, tasks: q.tasks.map(t => ({ ...t, current: data.progress, percent: data.target > 0 ? Math.round((data.progress / data.target) * 100) : t.percent })) };
+            }));
+          }
+
+          if (data?.done) {
+            workerRef.current?.postMessage({ action: "stop", id: "heartbeat" });
+            setSessionStatus(data.status);
+            if (data.status === "completed") {
+              fireQuestComplete();
+              const claimMsg = data.claimed ? " 🎁 وتم استلام المكافأة!" : "";
+              toast.success(`✅ تم إكمال المهمة بنجاح!${claimMsg}`);
+              setLogs(prev => [...prev, `✅ تم إكمال المهمة بنجاح!${claimMsg}`]);
+              setTimeout(() => resetQuestState(), 3000);
+            } else if (data.status === "failed") {
+              setLogs(prev => [...prev, `❌ فشلت المهمة: ${data.error || ""}`]);
+            }
+          }
+        } catch (err: any) {
+          setLogs(prev => [...prev, `❌ خطأ: ${err.message}`]);
+          workerRef.current?.postMessage({ action: "stop", id: "heartbeat" });
+          setSessionStatus("failed");
+        }
+      }
+    };
+
+    return () => {
+      worker.postMessage({ action: "stopAll" });
+      worker.terminate();
+    };
   }, []);
 
   const stopPolling = () => {
-    if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
-  };
-
-  const resetQuestState = () => {
-    stopPolling();
-    setSessionId(null);
-    setSessionStatus("idle");
-    setLogs([]);
-    setSelectedQuest(null);
-    loadStats();
-    loadRecentSessions();
-    loadCompletedQuests();
-  };
-
-  const startPolling = (sid: string) => {
-    stopPolling();
-    const method = selectedQuest?.method;
-    const delay = (method === "WATCH_VIDEO" || method === "WATCH_VIDEO_ON_MOBILE") ? 6000 : 31000;
-
-    pollingRef.current = setInterval(async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke("quest-heartbeat", { body: { sessionId: sid } });
-        if (error) throw error;
-
-        if (data?.progress !== undefined) {
-          setLiveProgress({ progress: data.progress, target: data.target });
-          setLogs(prev => [...prev, `📊 التقدم: ${data.progress}/${data.target}`]);
-          setQuests(prev => prev.map(q => {
-            if (q.id !== selectedQuest?.id) return q;
-            return { ...q, tasks: q.tasks.map(t => ({ ...t, current: data.progress, percent: data.target > 0 ? Math.round((data.progress / data.target) * 100) : t.percent })) };
-          }));
-        }
-
-        if (data?.done) {
-          stopPolling();
-          setSessionStatus(data.status);
-          if (data.status === "completed") {
-            fireQuestComplete();
-            const claimMsg = data.claimed ? " 🎁 وتم استلام المكافأة!" : "";
-            toast.success(`✅ تم إكمال المهمة بنجاح!${claimMsg}`);
-            setLogs(prev => [...prev, `✅ تم إكمال المهمة بنجاح!${claimMsg}`]);
-            setTimeout(() => resetQuestState(), 3000);
-          } else if (data.status === "failed") {
-            setLogs(prev => [...prev, `❌ فشلت المهمة: ${data.error || ""}`]);
-          }
-        }
-      } catch (err: any) {
-        setLogs(prev => [...prev, `❌ خطأ: ${err.message}`]);
-        stopPolling();
-        setSessionStatus("failed");
-      }
-    }, delay);
+    workerRef.current?.postMessage({ action: "stop", id: "heartbeat" });
+    activeSessionRef.current = null;
   };
 
   const startSolving = async () => {
