@@ -100,7 +100,8 @@ serve(async (req) => {
 
     // video progress beats with 7x speed-up capped at real elapsed + 10s
     const startReal = Date.now();
-    const base = quest.user_status?.progress?.[wanted]?.value || 0;
+    const prog = quest.user_status?.progress || {};
+    const base = Math.max(prog?.WATCH_VIDEO?.value || 0, prog?.WATCH_VIDEO_ON_MOBILE?.value || 0);
     let ts = base;
     for (let i = 0; i < beats; i++) {
       const elapsed = (Date.now() - startReal) / 1000;
@@ -119,8 +120,8 @@ serve(async (req) => {
         error: pRes.ok ? undefined : text.slice(0, 400),
       });
       if (!pRes.ok) break;
-      const v = parsed?.progress?.[wanted];
-      if (v?.value != null) ts = v.value;
+      const v = parsed?.progress?.[wanted] || parsed?.progress?.WATCH_VIDEO || parsed?.progress?.WATCH_VIDEO_ON_MOBILE;
+      if (v?.value != null) ts = Math.max(ts, v.value);
       if (v?.completed_at) { log.push({ completed: true }); break; }
       await sleep(2000);
     }
