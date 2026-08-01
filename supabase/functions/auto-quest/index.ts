@@ -325,8 +325,10 @@ async function checkAndCreateSessions(supabase: any, userId: string): Promise<nu
 
       if (existing) continue;
 
-      // Check this token's progress on this quest
+      // Check this token's progress + enrollment state on this quest
       let progress = 0;
+      let enrolled = false;
+      let tokenQuest: any = q;
       try {
         const tokenQuestsRes = await fetch(`${DISCORD_API}/quests/@me`, {
           headers: getDiscordHeaders(tokenRecord.encrypted_token),
@@ -335,10 +337,20 @@ async function checkAndCreateSessions(supabase: any, userId: string): Promise<nu
           const tokenData = await tokenQuestsRes.json();
           const tq = tokenData.quests?.find((x: any) => x.id === q.id);
           if (tq?.user_status?.completed_at) continue; // Already completed on this token
+          if (tq) tokenQuest = tq;
+          enrolled = !!tq?.user_status?.enrolled_at;
           progress = tq?.user_status?.progress?.[solveMethod]?.value || 0;
         }
         await sleep(1500); // Rate limit protection
       } catch { /* ignore */ }
+
+      // Auto-accept the quest for this token if it isn't accepted yet
+      if (!enrolled) {
+        const status = await enrollQuest(tokenRecord.encrypted_token, q.id, tokenQuest);
+        if (!status) continue; // couldn't accept -> skip this token for now
+        progress = status?.progress?.[solveMethod]?.value || progress;
+        await sleep(1500);
+      }
 
       const { data: session } = await supabase
         .from("quest_sessions")
