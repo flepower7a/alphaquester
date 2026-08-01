@@ -153,26 +153,63 @@ serve(async (req) => {
           const discordToken = tokenRecord.encrypted_token;
           const method = session.method;
           const target = session.target || 0;
+          const isVideo = method === "WATCH_VIDEO" || method === "WATCH_VIDEO_ON_MOBILE";
 
-          // Send heartbeat
-          let endpoint: string;
-          let body: any;
+          let res: Response;
+          let data: any = null;
+          let progressValue = session.progress || 0;
 
-          if (method === "WATCH_VIDEO" || method === "WATCH_VIDEO_ON_MOBILE") {
-            const progress = session.progress || 0;
-            const startDate = Math.floor(Date.now() / 1000) - progress;
-            endpoint = `${DISCORD_API}/quests/${session.quest_id}/video-progress`;
-            body = { timestamp: Math.floor(Date.now() / 1000) - startDate };
+          if (isVideo) {
+            // Video quests: pulse several times in one invocation. Discord caps
+            // the reported watch time near real elapsed time, so we step by 8s
+            // every ~2.5s and stop when the cap is hit or the quest completes.
+            const endpoint = `${DISCORD_API}/quests/${session.quest_id}/video-progress`;
+            let ok = false;
+            let lastRes: Response | null = null;
+
+            for (let i = 0; i < 16; i++) {
+              const nextTimestamp = target > 0
+                ? Math.min(target, progressValue + 8)
+                : progressValue + 8;
+
+              const beatRes = await fetch(endpoint, {
+                method: "POST",
+                headers: getDiscordHeaders(discordToken),
+                body: JSON.stringify({ timestamp: nextTimestamp }),
+              });
+              lastRes = beatRes;
+
+              if (!beatRes.ok) {
+                // 400 usually means we got ahead of real time -> stop pulsing,
+                // keep whatever progress we already earned this round.
+                if (beatRes.status === 400 && ok) break;
+                if (beatRes.status === 400) {
+                  const enrollRes = await enrollQuest(discordToken, session.quest_id, null);
+                  if (enrollRes) { await sleep(1500); continue; }
+                }
+                break;
+              }
+
+              ok = true;
+              const beatData = await beatRes.json().catch(() => null);
+              if (beatData) data = beatData;
+              const tp = beatData?.progress?.[method]
+                || beatData?.progress?.WATCH_VIDEO
+                || beatData?.progress?.WATCH_VIDEO_ON_MOBILE;
+              if (tp?.value != null) progressValue = Math.max(progressValue, tp.value);
+              if (tp?.completed_at || (target > 0 && progressValue >= target)) break;
+
+              await sleep(2500);
+            }
+
+            res = (ok ? new Response("{}", { status: 200 }) : (lastRes ?? new Response("{}", { status: 500 })));
           } else {
-            endpoint = `${DISCORD_API}/quests/${session.quest_id}/heartbeat`;
-            body = { stream_key: `call:${session.quest_id}:1`, terminal: false };
+            res = await fetch(`${DISCORD_API}/quests/${session.quest_id}/heartbeat`, {
+              method: "POST",
+              headers: getDiscordHeaders(discordToken),
+              body: JSON.stringify({ stream_key: `call:${session.quest_id}:1`, terminal: false }),
+            });
           }
-
-          const res = await fetch(endpoint, {
-            method: "POST",
-            headers: getDiscordHeaders(discordToken),
-            body: JSON.stringify(body),
-          });
 
           if (!res.ok) {
             const errText = await res.text().catch(() => "");
@@ -188,12 +225,13 @@ serve(async (req) => {
           }
 
           heartbeats++;
-          const data = await res.json();
-          const taskProgress = data?.progress?.[method];
+          if (!isVideo) data = await res.json().catch(() => null);
+          const taskProgress = data?.progress?.[method]
+            || (isVideo ? (data?.progress?.WATCH_VIDEO || data?.progress?.WATCH_VIDEO_ON_MOBILE) : null);
 
-          if (taskProgress) {
-            const progress = taskProgress.value || session.progress || 0;
-            const isCompleted = !!taskProgress.completed_at || progress >= target;
+          if (taskProgress || isVideo) {
+            const progress = Math.max(progressValue, taskProgress?.value || 0);
+            const isCompleted = !!taskProgress?.completed_at || (target > 0 && progress >= target);
 
             await supabase.from("quest_sessions").update({
               progress,
@@ -244,7 +282,7 @@ serve(async (req) => {
           }
 
           // Small delay between tokens to avoid rate limits
-          await sleep(2000);
+          await sleep(1000);
         } catch (e) {
           console.error(`Error processing session ${session.id}:`, e);
         }
