@@ -144,7 +144,20 @@ serve(async (req) => {
     const tasks = config?.task_config_v2?.tasks || config?.task_config?.tasks || {};
     const task = tasks[method];
     const target = task?.target || 0;
-    const progress = quest.user_status?.progress?.[method]?.value || 0;
+    let progress = quest.user_status?.progress?.[method]?.value || 0;
+    let enrolled = !!quest.user_status?.enrolled_at;
+
+    // Auto-accept the quest if the user hasn't accepted it in Discord yet
+    if (!enrolled) {
+      const status = await enrollQuest(discordToken, questId, quest);
+      if (!status) {
+        return new Response(JSON.stringify({ error: "Failed to accept quest on Discord" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      enrolled = true;
+      progress = status?.progress?.[method]?.value || progress;
+    }
 
     // Create session with token_id reference (not the actual token)
     const { data: session, error: sessionError } = await supabase
