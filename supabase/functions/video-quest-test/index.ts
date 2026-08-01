@@ -49,7 +49,8 @@ serve(async (req) => {
     if (!token) throw new Error("Token_Test secret missing");
 
     const body = await req.json().catch(() => ({}));
-    const mobile = !!body.mobile;
+    const mobile = !!body.mobileHeaders;
+    const wantMobileTask = !!body.mobile;
     const beats = body.beats ?? 4;
 
     const qRes = await fetch(`${DISCORD_API}/quests/@me`, { headers: headers(token, mobile) });
@@ -57,7 +58,7 @@ serve(async (req) => {
     const qData = await qRes.json();
     const now = new Date();
 
-    const wanted = mobile ? "WATCH_VIDEO_ON_MOBILE" : "WATCH_VIDEO";
+    const wanted = wantMobileTask ? "WATCH_VIDEO_ON_MOBILE" : "WATCH_VIDEO";
     const candidates = (qData.quests || []).filter((q: any) => {
       const tasks = q.config?.task_config_v2?.tasks || q.config?.task_config?.tasks || {};
       if (!tasks[wanted]) return false;
