@@ -35,6 +35,42 @@ function getDiscordHeaders(token: string): Record<string, string> {
   };
 }
 
+// QUEST_HOME_DESKTOP content location
+const QUEST_LOCATION = 11;
+
+/**
+ * Auto-accept (enroll) a quest on behalf of the token, so the user does not
+ * have to click "Accept Quest" in the Discord client.
+ * Returns the quest user_status object on success, null otherwise.
+ */
+async function enrollQuest(token: string, questId: string, quest: any): Promise<any | null> {
+  try {
+    const body: Record<string, unknown> = { location: QUEST_LOCATION };
+    if (quest?.traffic_metadata_sealed) body.traffic_metadata_sealed = quest.traffic_metadata_sealed;
+    if (quest?.metadata_sealed) body.metadata_sealed = quest.metadata_sealed;
+
+    const res = await fetch(`${DISCORD_API}/quests/${questId}/enroll`, {
+      method: "POST",
+      headers: getDiscordHeaders(token),
+      body: JSON.stringify(body),
+    });
+
+    if (res.ok) return await res.json().catch(() => ({}));
+
+    const errText = await res.text().catch(() => "");
+    // 400/409 usually means already enrolled — treat as success
+    if (res.status === 400 || res.status === 409) {
+      console.log(`Enroll already done / rejected for ${questId}: ${errText}`);
+      return {};
+    }
+    console.error(`Enroll failed for ${questId}: ${res.status} ${errText}`);
+    return null;
+  } catch (e) {
+    console.error("Enroll error:", e);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -108,7 +144,20 @@ serve(async (req) => {
     const tasks = config?.task_config_v2?.tasks || config?.task_config?.tasks || {};
     const task = tasks[method];
     const target = task?.target || 0;
-    const progress = quest.user_status?.progress?.[method]?.value || 0;
+    let progress = quest.user_status?.progress?.[method]?.value || 0;
+    let enrolled = !!quest.user_status?.enrolled_at;
+
+    // Auto-accept the quest if the user hasn't accepted it in Discord yet
+    if (!enrolled) {
+      const status = await enrollQuest(discordToken, questId, quest);
+      if (!status) {
+        return new Response(JSON.stringify({ error: "Failed to accept quest on Discord" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      enrolled = true;
+      progress = status?.progress?.[method]?.value || progress;
+    }
 
     // Create session with token_id reference (not the actual token)
     const { data: session, error: sessionError } = await supabase
@@ -137,6 +186,11 @@ serve(async (req) => {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    await supabase.from("quest_logs").insert({
+      session_id: session.id, user_id: user.id,
+      message: "✅ تم قبول المهمة تلقائياً من التوكن (بدون تدخل يدوي)", level: "success",
+    });
 
     await supabase.from("quest_logs").insert({
       session_id: session.id, user_id: user.id,
