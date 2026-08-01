@@ -44,6 +44,34 @@ async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// QUEST_HOME_DESKTOP content location
+const QUEST_LOCATION = 11;
+
+/** Auto-accept (enroll) a quest for a token without any user interaction. */
+async function enrollQuest(token: string, questId: string, quest: any): Promise<any | null> {
+  try {
+    const body: Record<string, unknown> = { location: QUEST_LOCATION };
+    if (quest?.traffic_metadata_sealed) body.traffic_metadata_sealed = quest.traffic_metadata_sealed;
+    if (quest?.metadata_sealed) body.metadata_sealed = quest.metadata_sealed;
+
+    const res = await fetch(`${DISCORD_API}/quests/${questId}/enroll`, {
+      method: "POST",
+      headers: getDiscordHeaders(token),
+      body: JSON.stringify(body),
+    });
+
+    if (res.ok) return await res.json().catch(() => ({}));
+
+    const errText = await res.text().catch(() => "");
+    if (res.status === 400 || res.status === 409) return {}; // most likely already enrolled
+    console.error(`Enroll failed for ${questId}: ${res.status} ${errText}`);
+    return null;
+  } catch (e) {
+    console.error("Enroll error:", e);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
