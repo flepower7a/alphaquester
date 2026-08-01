@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.auto-quest]
 verify_jwt = false
+
+[functions.video-quest-test]
+verify_jwt = false
