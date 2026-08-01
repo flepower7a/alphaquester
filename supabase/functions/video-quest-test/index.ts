@@ -100,11 +100,12 @@ serve(async (req) => {
 
     // video progress beats with 7x speed-up capped at real elapsed + 10s
     const startReal = Date.now();
-    let ts = quest.user_status?.progress?.[wanted]?.value || 0;
+    const base = quest.user_status?.progress?.[wanted]?.value || 0;
+    let ts = base;
     for (let i = 0; i < beats; i++) {
       const elapsed = (Date.now() - startReal) / 1000;
-      const allowed = ts + elapsed + 10;
-      ts = Math.min(target, Math.max(ts + 1, Math.min(allowed, ts + 7 * 6)));
+      const allowed = base + elapsed + 8;
+      ts = Math.min(target, Math.max(ts, Math.min(allowed, ts + 7 * 6)));
       const pRes = await fetch(`${DISCORD_API}/quests/${quest.id}/video-progress`, {
         method: "POST", headers: headers(token, mobile),
         body: JSON.stringify({ timestamp: Math.floor(ts) }),
@@ -114,7 +115,7 @@ serve(async (req) => {
       try { parsed = JSON.parse(text); } catch { /* ignore */ }
       log.push({
         beat: i + 1, sentTimestamp: Math.floor(ts), status: pRes.status,
-        progress: parsed?.progress?.[wanted] ?? null,
+        progress: parsed?.progress ?? null,
         error: pRes.ok ? undefined : text.slice(0, 400),
       });
       if (!pRes.ok) break;
