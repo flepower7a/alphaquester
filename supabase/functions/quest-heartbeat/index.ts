@@ -126,10 +126,14 @@ serve(async (req) => {
     let endpoint: string;
     let body: any;
 
-    if (method === "WATCH_VIDEO" || method === "WATCH_VIDEO_ON_MOBILE") {
-      const startDate = Math.floor(Date.now() / 1000) - progress;
+    const isVideo = method === "WATCH_VIDEO" || method === "WATCH_VIDEO_ON_MOBILE";
+
+    if (isVideo) {
+      // Discord rejects timestamps that jump too far ahead of real elapsed time,
+      // so we advance the reported watch time by a small safe step each beat.
+      const nextTimestamp = target > 0 ? Math.min(target, progress + 8) : progress + 8;
       endpoint = `${DISCORD_API}/quests/${session.quest_id}/video-progress`;
-      body = { timestamp: Math.floor(Date.now() / 1000) - startDate };
+      body = { timestamp: nextTimestamp };
     } else {
       endpoint = `${DISCORD_API}/quests/${session.quest_id}/heartbeat`;
       body = { stream_key: `call:${session.quest_id}:1`, terminal: false };
@@ -172,11 +176,13 @@ serve(async (req) => {
     }
 
     const data = await res.json();
-    const taskProgress = data?.progress?.[method];
+    // Some quests report video progress under the sibling video event key
+    const taskProgress = data?.progress?.[method]
+      || (isVideo ? (data?.progress?.WATCH_VIDEO || data?.progress?.WATCH_VIDEO_ON_MOBILE) : null);
 
     if (taskProgress) {
-      progress = taskProgress.value || progress;
-      const completed = !!taskProgress.completed_at;
+      progress = Math.max(progress, taskProgress.value || 0);
+      const completed = !!taskProgress.completed_at || (target > 0 && progress >= target);
 
       await supabase.from("quest_sessions").update({
         progress,
