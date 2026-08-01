@@ -135,11 +135,29 @@ serve(async (req) => {
       body = { stream_key: `call:${session.quest_id}:1`, terminal: false };
     }
 
-    const res = await fetch(endpoint, {
+    const sendBeat = () => fetch(endpoint, {
       method: "POST",
       headers: getDiscordHeaders(discordToken),
       body: JSON.stringify(body),
     });
+
+    let res = await sendBeat();
+
+    // Self-heal: quest not accepted yet on Discord -> accept it and retry once
+    if (!res.ok && (res.status === 400 || res.status === 403 || res.status === 404)) {
+      const enrollRes = await fetch(`${DISCORD_API}/quests/${session.quest_id}/enroll`, {
+        method: "POST",
+        headers: getDiscordHeaders(discordToken),
+        body: JSON.stringify({ location: 11 }),
+      });
+      if (enrollRes.ok || enrollRes.status === 400 || enrollRes.status === 409) {
+        await supabase.from("quest_logs").insert({
+          session_id: sessionId, user_id: user.id,
+          message: "✅ تم قبول المهمة تلقائياً وإعادة المحاولة", level: "info",
+        });
+        res = await sendBeat();
+      }
+    }
 
     if (!res.ok) {
       const errText = await res.text().catch(() => "Unknown error");
