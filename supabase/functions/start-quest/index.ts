@@ -189,6 +189,11 @@ serve(async (req) => {
 
     await supabase.from("quest_logs").insert({
       session_id: session.id, user_id: user.id,
+      message: "✅ تم قبول المهمة تلقائياً من التوكن (بدون تدخل يدوي)", level: "success",
+    });
+
+    await supabase.from("quest_logs").insert({
+      session_id: session.id, user_id: user.id,
       message: "🚀 تم إنشاء الجلسة وبدء الحل", level: "info",
     });
 
