@@ -165,7 +165,9 @@ serve(async (req) => {
           method: solveMethod?.id || null,
           tasks: taskList, expires_at: config?.expires_at,
           enrolled: !!q.user_status?.enrolled_at, completed, supported,
+          unsupported_reason: unsupportedReason,
         };
+
       });
 
     return new Response(JSON.stringify({ quests }), {
