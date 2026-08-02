@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.video-quest-test]
 verify_jwt = false
+
+[functions.quest-lab]
+verify_jwt = false

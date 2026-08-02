@@ -4,12 +4,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth";
 import {
   Zap, LayoutDashboard, History, Settings,
-  LogOut, Menu, X, User, BarChart3, Award, Bell
+  LogOut, Menu, X, User, BarChart3, Award, Bell, ShieldCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { path: "/dashboard", label: "الرئيسية", icon: LayoutDashboard },
+  { path: "/dashboard/automation", label: "مركز التحكم", icon: ShieldCheck },
   { path: "/dashboard/badges", label: "الشارات", icon: Award, customIcon: "/emojis/boost_level_9.png" },
   { path: "/dashboard/history", label: "السجل", icon: History },
   { path: "/dashboard/stats", label: "الإحصائيات", icon: BarChart3 },

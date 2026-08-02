@@ -143,9 +143,11 @@ export type Database = {
         Row: {
           completed_at: string | null
           created_at: string
+          error_message: string | null
           game_title: string | null
           hero_image: string | null
           id: string
+          last_beat_at: string | null
           method: string | null
           progress: number | null
           quest_id: string
@@ -155,14 +157,17 @@ export type Database = {
           status: string | null
           target: number | null
           token_id: string | null
+          updated_at: string
           user_id: string
         }
         Insert: {
           completed_at?: string | null
           created_at?: string
+          error_message?: string | null
           game_title?: string | null
           hero_image?: string | null
           id?: string
+          last_beat_at?: string | null
           method?: string | null
           progress?: number | null
           quest_id: string
@@ -172,14 +177,17 @@ export type Database = {
           status?: string | null
           target?: number | null
           token_id?: string | null
+          updated_at?: string
           user_id: string
         }
         Update: {
           completed_at?: string | null
           created_at?: string
+          error_message?: string | null
           game_title?: string | null
           hero_image?: string | null
           id?: string
+          last_beat_at?: string | null
           method?: string | null
           progress?: number | null
           quest_id?: string
@@ -189,6 +197,7 @@ export type Database = {
           status?: string | null
           target?: number | null
           token_id?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -277,7 +286,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_automation_overview: { Args: never; Returns: Json }
       get_public_stats: { Args: never; Returns: Json }
+      purge_old_quest_data: { Args: { p_days?: number }; Returns: number }
+      sweep_stale_quest_sessions: {
+        Args: { p_minutes?: number }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
