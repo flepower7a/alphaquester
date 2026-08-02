@@ -135,9 +135,23 @@ serve(async (req) => {
       endpoint = `${DISCORD_API}/quests/${session.quest_id}/video-progress`;
       body = { timestamp: nextTimestamp };
     } else {
+      // Activity/stream quests need a real channel id inside the stream key.
+      let streamKey = `call:${session.quest_id}:1`;
+      if (method === "PLAY_ACTIVITY" || method === "STREAM_ON_DESKTOP") {
+        try {
+          const dmRes = await fetch(`${DISCORD_API}/users/@me/channels`, {
+            headers: getDiscordHeaders(discordToken),
+          });
+          if (dmRes.ok) {
+            const dms = await dmRes.json();
+            if (Array.isArray(dms) && dms[0]?.id) streamKey = `call:${dms[0].id}:1`;
+          }
+        } catch { /* keep fallback key */ }
+      }
       endpoint = `${DISCORD_API}/quests/${session.quest_id}/heartbeat`;
-      body = { stream_key: `call:${session.quest_id}:1`, terminal: false };
+      body = { stream_key: streamKey, terminal: false };
     }
+
 
     const sendBeat = () => fetch(endpoint, {
       method: "POST",
