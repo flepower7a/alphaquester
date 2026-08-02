@@ -133,9 +133,17 @@ serve(async (req) => {
 
         const supported = taskList.some((t) => SUPPORTED_QUESTS.includes(t.id));
         const solveMethod = taskList.find((t) => SUPPORTED_QUESTS.includes(t.id));
+        const unsupportedReason = supported ? null : (
+          taskList.some((t) => t.id === "ACHIEVEMENT_IN_ACTIVITY")
+            ? "تتطلب اللعب داخل النشاط بنفسك (ديسكورد يمنح التقدم من اللعبة فقط)"
+            : taskList.some((t) => t.id === "PLAY_ON_XBOX" || t.id === "PLAY_ON_PLAYSTATION")
+              ? "تتطلب ربط حساب Xbox أو PlayStation"
+              : "نوع مهمة غير مدعوم حالياً"
+        );
         const rewards = config?.rewards_config?.rewards || [];
         const reward = rewards[0];
         const completed = !!q.user_status?.completed_at;
+
 
         let heroImage: string | null = null;
         if (config?.assets?.hero) {
