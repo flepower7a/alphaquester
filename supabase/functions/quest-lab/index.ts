@@ -61,7 +61,9 @@ serve(async (req) => {
     });
 
     if (mode === "list") {
-      return new Response(JSON.stringify({ ok: true, count: all.length, quests: all }, null, 2), {
+      const pending = all.filter((q: any) => !q.expired && !q.completed);
+      const types = [...new Set(all.flatMap((q: any) => q.tasks.map((t: any) => t.type)))];
+      return new Response(JSON.stringify({ ok: true, count: all.length, allTaskTypes: types, pendingCount: pending.length, pending }, null, 2), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
