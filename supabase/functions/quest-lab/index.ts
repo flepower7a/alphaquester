@@ -68,6 +68,31 @@ serve(async (req) => {
       });
     }
 
+    if (mode === "claim") {
+      const raw = (qData.quests || []).map((q: any) => ({
+        id: q.id, name: q.config?.messages?.quest_name,
+        completed: !!q.user_status?.completed_at, claimed: !!q.user_status?.claimed_at,
+      }));
+      const claimable = raw.filter((q: any) => q.completed && !q.claimed);
+      log.push({ claimable });
+      const qid = body.questId || claimable[0]?.id;
+      if (!qid) return new Response(JSON.stringify({ ok: false, reason: "nothing claimable", log }, null, 2), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const variants = body.variants || [
+        { platform: 0, location: 11 }, { platform: 1, location: 11 },
+        { platform: 2, location: 11 }, { platform: "desktop", location: 11 },
+      ];
+      for (const v of variants) {
+        const r = await fetch(`${DISCORD_API}/quests/${qid}/claim-reward`, {
+          method: "POST", headers: headers(token), body: JSON.stringify(v),
+        });
+        const t = await r.text();
+        log.push({ variant: v, status: r.status, body: t.slice(0, 250) });
+        if (r.ok) break;
+        await sleep(700);
+      }
+      return new Response(JSON.stringify({ ok: true, questId: qid, log }, null, 2), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     if (mode === "probe") {
       const qid = body.questId || all.find((q: any) => !q.expired && !q.completed)?.id;
       const paths = body.paths || [
