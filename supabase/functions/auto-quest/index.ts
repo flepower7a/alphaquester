@@ -139,7 +139,24 @@ serve(async (req) => {
 
     // === ACTION: sweep — stop sessions with no recent activity ===
     if (action === "sweep") {
-      const minutes = Number(bodySafe?.minutes) > 0 ? Number(bodySafe.minutes) : 10;
+      const minutes = Number(bodySafe?.minutes) >= 0 ? Number(bodySafe.minutes) : 10;
+      if (bodySafe?.userId) {
+        const cutoff = new Date(Date.now() - minutes * 60_000).toISOString();
+        const { data: stale } = await supabase
+          .from("quest_sessions")
+          .select("id, last_beat_at, started_at, created_at")
+          .eq("user_id", bodySafe.userId)
+          .in("status", ["running", "pending"]);
+        const ids = (stale || [])
+          .filter((s: any) => new Date(s.last_beat_at || s.started_at || s.created_at).toISOString() < cutoff)
+          .map((s: any) => s.id);
+        if (ids.length) {
+          await supabase.from("quest_sessions")
+            .update({ status: "stopped", error_message: "تم إيقافها يدوياً: لا يوجد نشاط" })
+            .in("id", ids);
+        }
+        return json({ success: true, swept: ids.length });
+      }
       const { data, error } = await supabase.rpc("sweep_stale_quest_sessions", { p_minutes: minutes });
       if (error) throw error;
       return json({ success: true, swept: data ?? 0 });
@@ -147,8 +164,9 @@ serve(async (req) => {
 
     // === ACTION: check — find new quests and create sessions for all tokens ===
     if (action === "check") {
-      const { data: autoUsers } = await supabase
-        .from("profiles").select("user_id").eq("auto_quest_enabled", true);
+      let usersQuery = supabase.from("profiles").select("user_id").eq("auto_quest_enabled", true);
+      if (bodySafe?.userId) usersQuery = usersQuery.eq("user_id", bodySafe.userId);
+      const { data: autoUsers } = await usersQuery;
 
       if (!autoUsers?.length) return json({ message: "No auto-quest users", totalCreated: 0 });
 
@@ -167,6 +185,7 @@ serve(async (req) => {
         .not("token_id", "is", null);
       if (onlySession) query = query.eq("id", onlySession);
       else query = query.like("quest_name", "%[AUTO]%");
+      if (bodySafe?.userId) query = query.eq("user_id", bodySafe.userId);
 
       const { data: activeSessions } = await query;
       if (!activeSessions?.length) return json({ message: "No active auto sessions", heartbeats: 0, completed: 0 });
