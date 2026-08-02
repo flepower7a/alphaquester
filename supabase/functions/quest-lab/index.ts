@@ -68,6 +68,25 @@ serve(async (req) => {
       });
     }
 
+    if (mode === "probe") {
+      const qid = body.questId || all.find((q: any) => !q.expired && !q.completed)?.id;
+      const paths = body.paths || [
+        "achievement-progress", "activity-progress", "progress", "quest-progress",
+        "achievements", "task-progress", "complete", "claim-reward",
+      ];
+      for (const path of paths) {
+        const r = await fetch(`${DISCORD_API}/quests/${qid}/${path}`, {
+          method: "POST", headers: headers(token),
+          body: JSON.stringify(body.payload ?? { achievement_id: 1, count: 1, value: 1 }),
+        });
+        log.push({ path, status: r.status, body: (await r.text()).slice(0, 250) });
+        await sleep(700);
+      }
+      return new Response(JSON.stringify({ ok: true, questId: qid, log }, null, 2), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // === mode: activity — solve a PLAY_ACTIVITY quest ===
     const wanted = body.taskType || "PLAY_ACTIVITY";
     const candidates = all.filter((q: any) =>
