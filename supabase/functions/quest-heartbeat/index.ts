@@ -179,7 +179,10 @@ serve(async (req) => {
 
     if (!res.ok) {
       const errText = await res.text().catch(() => "Unknown error");
-      await supabase.from("quest_sessions").update({ status: "failed" }).eq("id", sessionId);
+      await supabase.from("quest_sessions").update({
+        status: "failed", last_beat_at: new Date().toISOString(),
+        error_message: `Discord ${res.status}`,
+      }).eq("id", sessionId);
       await supabase.from("quest_logs").insert({
         session_id: sessionId, user_id: user.id,
         message: `❌ فشل الـ heartbeat: ${res.status}`, level: "error",
@@ -202,6 +205,8 @@ serve(async (req) => {
         progress,
         status: completed ? "completed" : "running",
         completed_at: completed ? new Date().toISOString() : null,
+        last_beat_at: new Date().toISOString(),
+        error_message: null,
       }).eq("id", sessionId);
 
       await supabase.from("quest_logs").insert({
@@ -211,16 +216,14 @@ serve(async (req) => {
       });
 
       if (completed || progress >= target) {
-        // Auto-claim reward
+        // Auto-claim reward — Discord requires platform + location on this call
         let claimed = false;
         try {
-          const rewards = data?.config?.rewards_config?.rewards || [];
-          const reward = rewards[0];
-          if (reward && !reward.claimed) {
+          for (const variant of [{ platform: 0, location: 11 }, { platform: 1, location: 11 }, { platform: 2, location: 11 }]) {
             const claimRes = await fetch(`${DISCORD_API}/quests/${session.quest_id}/claim-reward`, {
               method: "POST",
               headers: getDiscordHeaders(discordToken),
-              body: JSON.stringify({}),
+              body: JSON.stringify(variant),
             });
             if (claimRes.ok) {
               claimed = true;
@@ -229,11 +232,13 @@ serve(async (req) => {
                 message: `🎁 تم استلام المكافأة تلقائياً!`,
                 level: "success",
               });
+              break;
             }
           }
         } catch (e) {
           console.error("Auto-claim error:", e);
         }
+
 
         const { data: profile } = await supabase
           .from("profiles")
